@@ -124,7 +124,7 @@ dependencies {
     // (Apache-2.0), only published on JitPack, so fetched at its pinned version
     // and checked against its SHA-256 below instead of trusting that repository.
     implementation(files(tesseractAar))
-    implementation("androidx.annotation:annotation:1.9.1")
+    implementation("androidx.annotation:annotation:1.11.0")
     // Scanning someone's QR code with the camera: Android's CameraX (Apache-2.0).
     implementation("androidx.camera:camera-camera2:1.6.2")
     implementation("androidx.camera:camera-lifecycle:1.6.2")
