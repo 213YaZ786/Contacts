@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Debug builds only: a way for tests to hand over a shared card as SMS would. -->
+<!-- Debug builds only: a way for tests to hand over a shared card as SMS would,
+     and the loading mark on its own to look at it run. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
         <receiver android:name="com.yaz.contacts.DebugOfferReceiver" android:exported="true" />
+        <activity android:name="com.yaz.contacts.MarkDemoActivity" android:exported="true" />
     </application>
 </manifest>
