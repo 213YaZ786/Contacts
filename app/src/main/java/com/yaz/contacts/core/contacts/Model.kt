@@ -237,10 +237,13 @@ object Contacts {
 
     /** The list's order: favourites apart, then everyone by the chosen name. */
     fun sorted(all: List<Contact>, order: SortOrder): List<Contact> {
-        val key: (Contact) -> String = { if (order == SortOrder.LAST_NAME) it.alternative else it.name }
+        val key: (Contact) -> String = { sortKey(it, order) }
         return all.sortedWith(compareBy<Contact>({ initialOf(key(it)) == "#" }, { People.plain(key(it)) }, { it.id }))
     }
 
-    /** Names a person goes by in the list: last name first when sorted that way. */
-    fun shown(c: Contact, order: SortOrder): String = if (order == SortOrder.LAST_NAME) c.alternative.ifBlank { c.name } else c.name
+    /** The name a person is shown by: "Martin, Joëlle" when the user wants the last name first. */
+    fun shown(c: Contact, lastFirst: Boolean): String = if (lastFirst) c.alternative.ifBlank { c.name } else c.name
+
+    /** The name a person is sorted and filed by, under its letter. */
+    fun sortKey(c: Contact, order: SortOrder): String = if (order == SortOrder.LAST_NAME) c.alternative.ifBlank { c.name } else c.name
 }

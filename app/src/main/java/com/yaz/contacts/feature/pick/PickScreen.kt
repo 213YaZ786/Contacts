@@ -114,7 +114,7 @@ fun PickScreen(kind: PickKind, title: String, onClose: () -> Unit, onPicked: (Ur
             ) {
                 items(list, key = { it.id }) { c ->
                     PersonLine(
-                        name = Contacts.shown(c, settings.sortOrder),
+                        name = Contacts.shown(c, settings.lastNameFirst),
                         photo = c.photo,
                         subtitle = when (kind) {
                             PickKind.PHONE -> c.phones.firstOrNull()?.let { Numbers.format(context, it) } + if (c.phones.size > 1) " +${c.phones.size - 1}" else ""

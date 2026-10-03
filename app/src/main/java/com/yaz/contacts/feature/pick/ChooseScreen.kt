@@ -97,7 +97,7 @@ fun ChooseScreen(adding: Details?, onClose: () -> Unit, onNew: () -> Unit, onExi
                 list == null -> item { Box(Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) { LoadingMark(size = 56.dp) } }
                 else -> items(list, key = { it.id }) { c ->
                     PersonLine(
-                        name = Contacts.shown(c, settings.sortOrder),
+                        name = Contacts.shown(c, settings.lastNameFirst),
                         photo = c.photo,
                         subtitle = c.phones.firstOrNull()?.let { Numbers.format(context, it) } ?: c.emails.firstOrNull(),
                         starred = c.starred,

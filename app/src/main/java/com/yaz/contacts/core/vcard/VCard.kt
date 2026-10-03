@@ -215,6 +215,7 @@ object VCard {
         val messengers = mutableListOf<Labelled>()
         val sips = mutableListOf<Labelled>()
         val categories = mutableListOf<String>()
+        var look: com.yaz.contacts.core.contacts.Look? = null
 
         fun clip(s: String, max: Int = 300) = s.filter { it == '\n' || !it.isISOControl() }.trim().take(max)
 
@@ -268,6 +269,8 @@ object VCard {
                 "X-SIP" -> clip(unescape(p.value).removePrefix("sip:"), 200).takeIf { it.isNotBlank() }?.let { sips += Labelled(kind = SipAddress.TYPE_OTHER, value = it) }
                 "CATEGORIES" -> categories += unescape(p.value).split(',').map { clip(it, 60) }.filter { it.isNotBlank() && it.lowercase() != "mycontacts" && it.lowercase() != "starred" }
                 "PHOTO" -> if (photo == null) photo = photoOf(p)
+                // The look a person chose for themselves (their colour, monogram, poster), as the phone apps share it.
+                "X-YAZ-LOOK" -> look = com.yaz.contacts.core.contacts.LookCodec.decode(unescape(p.value)).takeIf { !it.isDefault }
                 // Android writes its own kinds as X-ANDROID-CUSTOM:mimetype;value;...
                 "X-ANDROID-CUSTOM" -> {
                     val a = parts(p.value)
@@ -291,7 +294,8 @@ object VCard {
             nickname = nickname?.takeIf { it.isNotBlank() }?.let { Labelled(kind = 1, value = it) },
             note = note?.takeIf { it.isNotBlank() }?.let { Labelled(kind = 0, value = it) },
             phones = phones.take(ROWS), emails = emails.take(ROWS), addresses = addresses.take(ROWS), websites = websites.take(ROWS),
-            events = events.take(ROWS), relations = relations.take(ROWS), messengers = messengers.take(ROWS), sips = sips.take(ROWS)
+            events = events.take(ROWS), relations = relations.take(ROWS), messengers = messengers.take(ROWS), sips = sips.take(ROWS),
+            look = look ?: com.yaz.contacts.core.contacts.Look()
         )
         val empty = name.isEmpty && org.isEmpty && phones.isEmpty() && emails.isEmpty() && addresses.isEmpty()
         return if (empty) null else Card(details, photo, categories.distinct().take(ROWS))

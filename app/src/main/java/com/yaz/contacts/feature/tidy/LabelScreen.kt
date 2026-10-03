@@ -106,7 +106,7 @@ fun LabelScreen(id: Long, onBack: () -> Unit, onOpen: (Long) -> Unit) {
             if (members.isEmpty()) item { EmptyZone(title = "No one here yet", message = "Add people to this label.", icon = AppIcons.Label) }
             items(members, key = { it.id }) { c ->
                 PersonLine(
-                    name = Contacts.shown(c, settings.sortOrder),
+                    name = Contacts.shown(c, settings.lastNameFirst),
                     photo = c.photo,
                     subtitle = c.phones.firstOrNull()?.let { Numbers.format(context, it) } ?: c.emails.firstOrNull(),
                     starred = c.starred,

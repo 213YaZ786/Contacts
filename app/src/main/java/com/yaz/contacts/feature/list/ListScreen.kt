@@ -225,6 +225,7 @@ fun ListScreen(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onOpenSettings: () 
                     favorites = if (query.isBlank() && filter == Filter.All) favorites else emptyList(),
                     birthdays = if (query.isBlank() && filter == Filter.All) Contacts.birthdays(people, java.time.LocalDate.now()) else emptyList(),
                     grouped = filter != Filter.Recent,
+                    lastFirst = settings.lastNameFirst,
                     me = if (query.isBlank() && filter == Filter.All && !selecting) (me ?: NO_CARD) else null,
                     onMe = { me?.let { onOpen(it.id) } ?: onMakeMe() },
                     order = order,
@@ -305,6 +306,7 @@ private fun PeopleList(
     favorites: List<Contact>,
     birthdays: List<Triple<Contact, Long, Int?>>,
     grouped: Boolean,
+    lastFirst: Boolean,
     me: Contact?,
     onMe: () -> Unit,
     order: com.yaz.contacts.core.contacts.SortOrder,
@@ -315,7 +317,7 @@ private fun PeopleList(
     onSelect: (Long) -> Unit
 ) {
     // Recent ones keep their order, newest first, under one heading.
-    val groups = remember(shown, order, grouped) { if (grouped) shown.groupBy { Contacts.initialOf(Contacts.shown(it, order)) } else mapOf("Changed lately" to shown) }
+    val groups = remember(shown, order, grouped) { if (grouped) shown.groupBy { Contacts.initialOf(Contacts.sortKey(it, order)) } else mapOf("Changed lately" to shown) }
     val rail = grouped && shown.size >= RAIL_FROM
     val list = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -362,7 +364,7 @@ private fun PeopleList(
                     val menu = rememberPillMenu()
                     Box(Modifier.animateItem().then(menu.tracker)) {
                         PersonLine(
-                            name = Contacts.shown(c, order),
+                            name = Contacts.shown(c, lastFirst),
                             photo = c.photo,
                             subtitle = c.company ?: c.phones.firstOrNull()?.let { Numbers.format(context, it) } ?: c.emails.firstOrNull(),
                             starred = c.starred,

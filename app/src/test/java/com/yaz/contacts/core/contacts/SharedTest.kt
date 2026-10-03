@@ -28,4 +28,17 @@ class SharedTest {
         val card = Details(name = Name(given = "Amelie", family = "P"), phones = listOf(Labelled(kind = 2, value = "0611223344")))
         assertTrue(Shared.changes(base, card, photo = false).isEmpty())
     }
+
+    @Test
+    fun theirLookComesInTheUsersSettingsStay() {
+        val text = "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Amélie Poulain\r\nX-YAZ-LOOK:{\"color\":-14776091\\,\"style\":\"bold\"\\,\"vibration\":\"Wave\"}\r\nEND:VCARD\r\n"
+        val card = com.yaz.contacts.core.vcard.VCard.parse(text).single().details
+        assertEquals(-14776091, card.look.color)
+        val mine = base.copy(look = Look(vibration = "Heartbeat", bypass = true))
+        assertTrue("their colour and poster" in Shared.changes(mine, card, photo = false))
+        val after = Shared.apply(mine, card)
+        assertEquals("bold", after.look.posterStyle)
+        assertEquals("Heartbeat", after.look.vibration)
+        assertTrue(after.look.bypass)
+    }
 }

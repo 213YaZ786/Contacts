@@ -17,14 +17,22 @@ object Shared {
         val newEmails = card.emails.count { e -> base.emails.none { it.value.equals(e.value, true) } }
         if (newEmails > 0) add(if (newEmails == 1) "an email" else "$newEmails emails")
         if (card.websites.any { w -> base.websites.none { it.value == w.value } }) add("a website")
+        if (!card.look.isDefault && theirs(card.look) != theirs(base.look)) add("their colour and poster")
     }
+
+    /** What a person chooses for themselves; what the user set for them (vibration, sounds, ringing) stays the user's. */
+    private fun theirs(l: Look) = Look(
+        color = l.color, posterZoom = l.posterZoom, posterX = l.posterX, posterY = l.posterY, posterStyle = l.posterStyle,
+        emoji = l.emoji, pronouns = l.pronouns, letters = l.letters, font = l.font
+    )
 
     fun apply(base: Details, card: Details): Details = base.copy(
         name = if (card.name.isEmpty) base.name else card.name.copy(rowId = base.name.rowId),
         organization = if (card.organization.isEmpty) base.organization else card.organization.copy(rowId = base.organization.rowId),
         phones = base.phones + card.phones.filter { p -> base.phones.none { digits(it.value) == digits(p.value) } }.map { it.copy(rowId = 0, rawId = 0) },
         emails = base.emails + card.emails.filter { e -> base.emails.none { it.value.equals(e.value, true) } }.map { it.copy(rowId = 0, rawId = 0) },
-        websites = base.websites + card.websites.filter { w -> base.websites.none { it.value == w.value } }.map { it.copy(rowId = 0, rawId = 0) }
+        websites = base.websites + card.websites.filter { w -> base.websites.none { it.value == w.value } }.map { it.copy(rowId = 0, rawId = 0) },
+        look = if (card.look.isDefault) base.look else theirs(card.look).copy(vibration = base.look.vibration, tone = base.look.tone, bypass = base.look.bypass)
     )
 
     private fun digits(s: String) = s.filter(Char::isDigit).takeLast(9)
