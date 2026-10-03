@@ -156,6 +156,7 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                 onPoster = { nav.navigate(Routes.poster(it)) },
                 onTap = { nav.navigate(Routes.tap(true)) },
                 onPrivate = { nav.navigate(Routes.private(it)) },
+                onGive = { nav.navigate(Routes.tap(true, it)) },
                 onOpenSettings = { nav.navigate(Routes.SETTINGS) },
                 onOpenTidy = { nav.navigate(Routes.TIDY) },
                 onAdd = { nav.navigate(Routes.edit()) }
@@ -180,7 +181,8 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                     onPrivate = { hidden ->
                         nav.popBackStack()
                         nav.navigate(Routes.private(hidden))
-                    }
+                    },
+                    onGive = { nav.navigate(Routes.tap(true, it)) }
                 )
             }
         }
@@ -296,29 +298,37 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
             val id = entry.arguments?.getLong("id") ?: return@composable
             com.yaz.contacts.feature.contact.PosterScreen(id, onBack = ::back)
         }
-        composable(Routes.TAP, arguments = listOf(navArgument("give") { type = NavType.BoolType; defaultValue = true })) { entry ->
+        composable(Routes.TAP, arguments = listOf(
+            navArgument("give") { type = NavType.BoolType; defaultValue = true },
+            navArgument("id") { type = NavType.LongType; defaultValue = -1L }
+        )) { entry ->
             val give = entry.arguments?.getBoolean("give") != false
+            val id = entry.arguments?.getLong("id") ?: -1L
+            val own = id <= 0L
             val store: com.yaz.contacts.data.contacts.ContactStore = koinInject()
-            // The user's own card as it goes to the other phone, and their poster, read once.
+            // The card as it goes to the other phone, the user's or a contact's, and its poster, read once.
             val context = androidx.compose.ui.platform.LocalContext.current
             val me by androidx.compose.runtime.produceState<com.yaz.contacts.core.contacts.Details?>(null) {
-                if (give) value = store.me()?.let { store.details(it.id) }
+                if (give) value = if (own) store.me()?.let { store.details(it.id) } else store.details(id)
             }
             val mePhoto by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, me) {
                 val d = me ?: return@produceState
                 value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                     runCatching {
-                        android.provider.ContactsContract.Contacts.openContactPhotoInputStream(context.contentResolver, android.provider.ContactsContract.Profile.CONTENT_URI, true)?.use { it.readBytes() }
+                        val uri = if (own) android.provider.ContactsContract.Profile.CONTENT_URI
+                        else android.content.ContentUris.withAppendedId(android.provider.ContactsContract.Contacts.CONTENT_URI, d.id)
+                        android.provider.ContactsContract.Contacts.openContactPhotoInputStream(context.contentResolver, uri, true)?.use { it.readBytes() }
                     }.getOrNull()?.let { com.yaz.contacts.core.security.SafeImages.decode(context, it, 1440) }
                 }?.asImageBitmap()
             }
             val settingsStore: SettingsStore = koinInject()
-            // The encrypted chat's invite of this phone goes in the card, when SMS has one.
-            val invite by androidx.compose.runtime.produceState<String?>(null) { if (give) value = com.yaz.contacts.core.handoff.ChatLink.invite(context) }
+            // The encrypted chat's invite of this phone goes in the user's own card, when SMS has one.
+            val invite by androidx.compose.runtime.produceState<String?>(null) { if (give && own) value = com.yaz.contacts.core.handoff.ChatLink.invite(context) }
             val card = me?.let { d ->
-                com.yaz.contacts.core.vcard.VCard.short(com.yaz.contacts.core.contacts.Shareable.keep(d, settingsStore.current.keptBack), look = true, chat = invite)
+                if (own) com.yaz.contacts.core.vcard.VCard.short(com.yaz.contacts.core.contacts.Shareable.keep(d, settingsStore.current.keptBack), look = true, chat = invite)
+                else com.yaz.contacts.core.vcard.VCard.short(d, look = false)
             }
-            com.yaz.contacts.feature.nfc.TapScreen(give = give, me = me, mePhoto = mePhoto, card = card, onBack = ::back, onCard = { text ->
+            com.yaz.contacts.feature.nfc.TapScreen(give = give, own = own, me = me, mePhoto = mePhoto, card = card, onBack = ::back, onCard = { text ->
                 nav.popBackStack()
                 nav.navigate("import?uri=" + Uri.encode("text:" + drafts.put(text)) + "&person=true")
             })
@@ -349,7 +359,7 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
 
 /** The list, the way to a new contact floating over it, the first launch page until closed. */
 @Composable
-private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) -> Unit, onScan: () -> Unit, onPoster: (Long) -> Unit, onTap: () -> Unit, onPrivate: (String) -> Unit, onOpenSettings: () -> Unit, onOpenTidy: () -> Unit, onAdd: () -> Unit) {
+private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) -> Unit, onScan: () -> Unit, onPoster: (Long) -> Unit, onTap: () -> Unit, onGive: (Long) -> Unit, onPrivate: (String) -> Unit, onOpenSettings: () -> Unit, onOpenTidy: () -> Unit, onAdd: () -> Unit) {
     val store: SettingsStore = koinInject()
     var showWelcome by rememberSaveable { mutableStateOf(!store.current.welcomeSeen) }
     val settings by store.settings.collectAsState()
@@ -375,13 +385,14 @@ private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) ->
                             message = "Their page opens here.",
                             icon = AppIcons.Person,
                             modifier = Modifier.fillMaxSize()
-                        ) else ContactScreen(id = id, onBack = { picked = null }, onEdit = onEdit, onDeleted = { picked = null }, onMoved = { picked = it }, onScan = onScan, onPoster = onPoster, onTap = onTap, onPrivate = { picked = null; onPrivate(it) })
+                        ) else ContactScreen(id = id, onBack = { picked = null }, onEdit = onEdit, onDeleted = { picked = null }, onMoved = { picked = it }, onScan = onScan, onPoster = onPoster, onTap = onTap, onPrivate = { picked = null; onPrivate(it) }, onGive = onGive)
                     }
                 }
             }
         }
         CompositionLocalProvider(LocalGlassBackdrop provides backdrop.takeIf { look != null }) {
-            MovableAddButton(onClick = onAdd, above = 16.dp)
+            // Above the sections' pill at the bottom of the list.
+            MovableAddButton(onClick = onAdd, above = com.yaz.contacts.ui.component.DockClearance)
         }
         if (showWelcome) {
             Surface(
@@ -421,7 +432,8 @@ private fun MovableAddButton(onClick: () -> Unit, above: Dp) {
         val roomX = (constraints.maxWidth - side).coerceAtLeast(0f)
         val roomY = (constraints.maxHeight - side).coerceAtLeast(0f)
         val usual = with(density) { Offset(roomX - 8.dp.toPx(), roomY - above.toPx()) }
-        val saved = if (settings.addX >= 0f) Offset(settings.addX * roomX, settings.addY * roomY) else null
+        // A place saved before the pill at the bottom came stays above it.
+        val saved = (if (settings.addX >= 0f) Offset(settings.addX * roomX, settings.addY * roomY) else null)?.let { Offset(it.x, minOf(it.y, usual.y)) }
         var dragging by remember { mutableStateOf<Offset?>(null) }
         val at = dragging ?: saved ?: usual
         val current by rememberUpdatedState(at)

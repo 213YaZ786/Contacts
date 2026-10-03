@@ -26,6 +26,7 @@ fun TabFrame(
     onOpenSettings: () -> Unit,
     onOpenTidy: (() -> Unit)? = null,
     controls: (@Composable () -> Unit)? = null,
+    overlay: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {},
     content: @Composable (PaddingValues) -> Unit
 ) {
     FloatingFrame(
@@ -38,7 +39,8 @@ fun TabFrame(
             )
             Box(Modifier.fillMaxWidth().padding(top = 4.dp), contentAlignment = Alignment.TopCenter) { SetupZone() }
             controls?.invoke()
-        }
+        },
+        overlay = overlay
     ) { padding ->
         Box(Modifier.fillMaxSize()) { content(padding) }
     }

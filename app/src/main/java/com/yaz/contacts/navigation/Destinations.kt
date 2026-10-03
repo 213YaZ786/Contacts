@@ -17,12 +17,13 @@ object Routes {
     const val SCAN = "scan"
     const val CARD = "card"
     const val POSTER = "poster/{id}"
-    const val TAP = "tap?give={give}"
+    const val TAP = "tap?give={give}&id={id}"
     const val PRIVATE = "private/{id}"
 
     fun private(id: String) = "private/$id"
 
-    fun tap(give: Boolean) = "tap?give=$give"
+    /** Touch phones: gives the user's card, or the contact [id]'s, and takes theirs. */
+    fun tap(give: Boolean, id: Long = -1L) = "tap?give=$give&id=$id"
 
     fun poster(id: Long) = "poster/$id"
 

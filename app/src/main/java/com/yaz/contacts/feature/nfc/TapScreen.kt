@@ -89,7 +89,7 @@ private sealed interface Touch {
  * a network; sharing stops when this screen closes.
  */
 @Composable
-fun TapScreen(give: Boolean, me: Details?, mePhoto: ImageBitmap?, card: String?, onBack: () -> Unit, onCard: (String) -> Unit) {
+fun TapScreen(give: Boolean, own: Boolean = true, me: Details?, mePhoto: ImageBitmap?, card: String?, onBack: () -> Unit, onCard: (String) -> Unit) {
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
     val adapter = remember { NfcAdapter.getDefaultAdapter(context) }
@@ -225,16 +225,16 @@ fun TapScreen(give: Boolean, me: Details?, mePhoto: ImageBitmap?, card: String?,
                 Text(
                     when {
                         touch is Touch.Got -> "${(touch as Touch.Got).name.ifBlank { "Their card" }} is here"
-                        touch is Touch.Sent -> "Sent. Their phone offers to save your card."
+                        touch is Touch.Sent -> if (own) "Sent. Their phone offers to save your card." else "Sent. Their phone offers to save ${me?.display ?: "the card"}."
                         receiving -> "Hold the top of your phone against the top of theirs, with their card open to share."
-                        else -> "Hold the top of your phone against the top of theirs. They need no app to save your card."
+                        else -> "Hold the top of your phone against the top of theirs. They need no app to save " + (if (own) "your card." else "${me?.display ?: "this card"}.")
                     },
                     style = MaterialTheme.typography.titleMedium,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.widthIn(max = 420.dp)
                 )
                 EvenRows(minSlot = 120.dp, modifier = Modifier.widthIn(max = 420.dp)) {
-                    if (give) ActionTile(AppIcons.Share, "Give mine", accent = !receiving) { receiving = false; touch = Touch.Waiting }
+                    if (give) ActionTile(AppIcons.Share, if (own) "Give mine" else "Give card", accent = !receiving) { receiving = false; touch = Touch.Waiting }
                     ActionTile(AppIcons.Download, "Get theirs", accent = receiving) { receiving = true; touch = Touch.Waiting }
                 }
             }

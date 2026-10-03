@@ -101,7 +101,7 @@ import org.koin.compose.koinInject
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDeleted: () -> Unit, onMoved: (Long) -> Unit = { onDeleted() }, onScan: () -> Unit = {}, onPoster: (Long) -> Unit = {}, onTap: () -> Unit = {}, onPrivate: (String) -> Unit = { onDeleted() }) {
+fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDeleted: () -> Unit, onMoved: (Long) -> Unit = { onDeleted() }, onScan: () -> Unit = {}, onPoster: (Long) -> Unit = {}, onTap: () -> Unit = {}, onPrivate: (String) -> Unit = { onDeleted() }, onGive: (Long) -> Unit = {}) {
     val store: ContactStore = koinInject()
     val writer: ContactWriter = koinInject()
     val trash: Trash = koinInject()
@@ -178,7 +178,7 @@ fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDelete
                     Verified(d)
                     SharedCard(d)
                     Spacer(Modifier.height(20.dp))
-                    Actions(d, onQr = { showQr = true }, onScan = onScan, onTap = onTap)
+                    Actions(d, onQr = { showQr = true }, onScan = onScan, onTap = onTap, onGive = { onGive(d.id) })
                     Spacer(Modifier.height(16.dp))
                     Fields(d)
                     if (!android.provider.ContactsContract.isProfileId(d.id)) OnThisPhone(
@@ -453,7 +453,7 @@ private fun KeepBackDialog(d: Details, onDismiss: () -> Unit) {
 /** The ways to reach them, each a round pane of glass, wrapping onto a second line on a narrow screen. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Actions(d: Details, onQr: () -> Unit, onScan: () -> Unit, onTap: () -> Unit) {
+private fun Actions(d: Details, onQr: () -> Unit, onScan: () -> Unit, onTap: () -> Unit, onGive: () -> Unit) {
     var choosingFields by remember { mutableStateOf(false) }
     // The user's own card: only sharing it makes sense.
     if (android.provider.ContactsContract.isProfileId(d.id)) {
@@ -492,6 +492,9 @@ private fun Actions(d: Details, onQr: () -> Unit, onScan: () -> Unit, onTap: () 
             scope.launch { writer.star(d.id, !d.starred) }
         }
         ActionTile(AppIcons.Share, "Share") { sharing = true }
+        // Their card to a phone right here: by a touch, or shown as a QR code.
+        ActionTile(AppIcons.QrCode, "QR code") { onQr() }
+        if (com.yaz.contacts.BuildConfig.DEBUG || context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_NFC_HOST_CARD_EMULATION)) ActionTile(AppIcons.Nfc, "Touch phones") { onGive() }
     }
     if (sharing) {
         com.yaz.contacts.ui.component.ZoneAlertDialog(
@@ -700,7 +703,7 @@ private fun Elsewhere(d: Details, onDelete: () -> Unit, onSeparate: () -> Unit, 
         InfoRow(AppIcons.Add, "Add to the home screen", null, onClick = {
             scope.launch { if (com.yaz.contacts.core.handoff.Shortcuts.pin(context, d, accent)) haptics.done() else haptics.reject() }
         })
-        InfoRow(AppIcons.Account, d.accounts.joinToString(", ") { accountLabel(it) }, if (d.readOnly) "Saved in" else "Saved in · tap to move", onClick = if (d.readOnly || android.provider.ContactsContract.isProfileId(d.id)) null else onMove)
+        InfoRow(AppIcons.Account, d.accounts.joinToString(", ") { accountLabel(it) }, if (d.readOnly || android.provider.ContactsContract.isProfileId(d.id)) "Saved in" else "Saved in · tap to move", onClick = if (d.readOnly || android.provider.ContactsContract.isProfileId(d.id)) null else onMove)
         if (d.raws.size > 1) InfoRow(AppIcons.PersonRemove, "Separate", "Back into ${d.raws.size} contacts", onClick = onSeparate)
         if (!d.readOnly && !android.provider.ContactsContract.isProfileId(d.id)) InfoRow(AppIcons.Lock, "Keep private", "Only in Contacts, out of sight of other apps", onClick = onPrivate)
         if (!d.readOnly) InfoRow(AppIcons.Delete, "Delete", null, onClick = onDelete, tint = AlertRed)

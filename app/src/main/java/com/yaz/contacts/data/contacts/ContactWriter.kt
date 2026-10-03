@@ -151,7 +151,7 @@ class ContactWriter(private val context: Context) {
                 val uri = if (ContactsContract.isProfileId(contactId)) ContactsContract.Profile.CONTENT_URI
                 else ContactsContract.Contacts.getLookupUri(resolver, ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, contactId))
                 Saved(contactId, uri)
-            }.getOrNull()
+            }.onFailure { if (com.yaz.contacts.BuildConfig.DEBUG) android.util.Log.w("ContactWriter", "save failed", it) }.getOrNull()
         }
 
     /** Raw contacts of the contact being saved that their account does not let change. */
@@ -309,9 +309,24 @@ class ContactWriter(private val context: Context) {
             bitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
             out.toByteArray()
         }
-        val base = if (ContactsContract.isProfileId(rawId)) ContactsContract.Profile.CONTENT_RAW_CONTACTS_URI else RawContacts.CONTENT_URI
-        val uri = Uri.withAppendedPath(ContentUris.withAppendedId(base, rawId), RawContacts.DisplayPhoto.CONTENT_DIRECTORY)
-        resolver.openAssetFileDescriptor(uri, "rw")?.use { fd -> fd.createOutputStream().use { it.write(bytes) } }
+        // The full size photo through the raw contact's display_photo; the
+        // profile's own path takes no stream, the plain one routes its ids.
+        val stream = runCatching {
+            val uri = Uri.withAppendedPath(ContentUris.withAppendedId(RawContacts.CONTENT_URI, rawId), RawContacts.DisplayPhoto.CONTENT_DIRECTORY)
+            resolver.openAssetFileDescriptor(uri, "rw")?.use { fd -> fd.createOutputStream().use { it.write(bytes) } } != null
+        }.getOrDefault(false)
+        if (stream) return
+        // Else a photo row: Android makes the thumbnail and the display photo from it.
+        val photoType = ContactsContract.CommonDataKinds.Photo.CONTENT_ITEM_TYPE
+        val where = "${Data.RAW_CONTACT_ID} = ? AND ${Data.MIMETYPE} = ?"
+        val args = arrayOf(rawId.toString(), photoType)
+        val values = ContentValues().apply { put(ContactsContract.CommonDataKinds.Photo.PHOTO, bytes) }
+        if (resolver.update(Data.CONTENT_URI, values, where, args) == 0) {
+            resolver.insert(Data.CONTENT_URI, values.apply {
+                put(Data.RAW_CONTACT_ID, rawId)
+                put(Data.MIMETYPE, photoType)
+            }) ?: error("photo not saved")
+        }
     }
 
     private fun removePhoto(details: Details) {

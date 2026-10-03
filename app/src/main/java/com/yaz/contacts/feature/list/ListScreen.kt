@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -147,15 +149,49 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
     }
     androidx.activity.compose.BackHandler(enabled = selecting) { selectedIds = emptyList() }
     var labelling by remember { mutableStateOf(false) }
+    var choosingLabel by remember { mutableStateOf(false) }
     val writer: ContactWriter = koinInject()
     val context = LocalContext.current
     val haptics = rememberHaptics()
 
     Box(Modifier.fillMaxSize()) {
         TabFrame(
-            title = "Contacts",
+            title = when (filter) {
+                Filter.All -> "Contacts"
+                Filter.Favorites -> "Favorites"
+                Filter.Recent -> "Recent"
+                Filter.Private -> "Private"
+                is Filter.Label -> groups.firstOrNull { it.id == filter.id }?.title ?: "Contacts"
+            },
             onOpenSettings = onOpenSettings,
             onOpenTidy = onOpenTidy,
+            // In glass over the list, as Dialer's tabs.
+            overlay = {
+            // The sections in a floating pill at the bottom, as Dialer's tabs:
+            // everyone, favourites, recent, private, labels.
+            if (canRead && people.isNotEmpty() && !selecting) {
+                val sections = buildList {
+                    add(Triple("all", com.yaz.contacts.ui.component.DockItem(AppIcons.Contacts, "All"), filter == Filter.All))
+                    if (favorites.isNotEmpty() || filter == Filter.Favorites) add(Triple("fav", com.yaz.contacts.ui.component.DockItem(AppIcons.Star, "Favorites"), filter == Filter.Favorites))
+                    add(Triple("recent", com.yaz.contacts.ui.component.DockItem(AppIcons.History, "Recent"), filter == Filter.Recent))
+                    if (hidden.isNotEmpty() || filter == Filter.Private) add(Triple("private", com.yaz.contacts.ui.component.DockItem(AppIcons.Lock, "Private"), filter == Filter.Private))
+                    if (usedLabels.isNotEmpty()) add(Triple("labels", com.yaz.contacts.ui.component.DockItem(AppIcons.Label, "Labels"), filter is Filter.Label))
+                }
+                val at by androidx.compose.animation.core.animateFloatAsState(
+                    sections.indexOfFirst { it.third }.coerceAtLeast(0).toFloat(),
+                    androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 500f), label = "section"
+                )
+                com.yaz.contacts.ui.component.FloatingDock(
+                    items = sections.map { it.second },
+                    position = at,
+                    onSelect = { i ->
+                        val key = sections[i].first
+                        if (key == "labels") choosingLabel = true else filterKey = key
+                    },
+                    modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.navigationBars).padding(bottom = 16.dp)
+                )
+            }
+            },
             controls = {
                 if (selecting) {
                     val chosen = people.filter { it.id in selected }
@@ -190,18 +226,6 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
                             modifier = Modifier.widthIn(max = 560.dp).weight(1f, fill = false).fillMaxWidth(),
                             floating = true
                         )
-                    }
-                    // Filters wrap onto a second line rather than scroll sideways.
-                    run {
-                        Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
-                            EvenRows(minSlot = 96.dp, modifier = Modifier.widthIn(max = 560.dp).animateContentSize()) {
-                                TextControl("All", filter == Filter.All) { filterKey = "all" }
-                                if (favorites.isNotEmpty()) TextControl("Favorites", filter == Filter.Favorites) { filterKey = "fav" }
-                                TextControl("Recent", filter == Filter.Recent) { filterKey = "recent" }
-                                usedLabels.forEach { g -> TextControl(g.title, (filter as? Filter.Label)?.id == g.id) { filterKey = "label/${g.id}" } }
-                                if (hidden.isNotEmpty() || filter == Filter.Private) TextControl("Private", filter == Filter.Private) { filterKey = "private" }
-                            }
-                        }
                     }
                 }
             }
@@ -249,6 +273,22 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
         }
     }
 
+    if (choosingLabel) com.yaz.contacts.ui.component.ZoneAlertDialog(
+        onDismissRequest = { choosingLabel = false },
+        icon = { androidx.compose.material3.Icon(AppIcons.Label, null) },
+        title = { Text("Labels") },
+        text = {
+            EvenRows(minSlot = 120.dp) {
+                usedLabels.forEach { g ->
+                    TextControl(g.title, (filter as? Filter.Label)?.id == g.id) {
+                        filterKey = "label/${g.id}"
+                        choosingLabel = false
+                    }
+                }
+            }
+        },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = { choosingLabel = false }) { Text("Close") } }
+    )
     if (deleting.isNotEmpty()) {
         val those = deleting
         val what = if (those.size == 1) those[0].name.ifBlank { "this contact" } else "${those.size} contacts"
@@ -347,7 +387,7 @@ private fun PeopleList(
                     onOpen = onMe
                 )
             }
-            item(key = "shared") { SharedWithYou(shown, onOpen) }
+            if (me != null) item(key = "shared") { SharedWithYou(shown, onOpen) }
             if (grouped && me != null) {
                 item(key = "touch") { KeepInTouch(shown, onOpen) }
                 item(key = "often") {
@@ -421,7 +461,7 @@ private fun PeopleList(
     }
 }
 
-/** The long press pill of a person: call, write, star, share, delete. */
+/** The long press menu of a person, two columns of tiles: call, write, star, share, choose, delete. */
 @Composable
 private fun ContactMenu(menu: com.yaz.contacts.ui.component.PillMenuState, c: Contact, onDelete: (Contact) -> Unit, onSelect: (Long) -> Unit) {
     val context = LocalContext.current
@@ -432,16 +472,17 @@ private fun ContactMenu(menu: com.yaz.contacts.ui.component.PillMenuState, c: Co
         menu,
         listOfNotNull(
             c.phones.firstOrNull()?.let { number -> PillItem(AppIcons.Call, "Call", PillMotion.BOUNCE, AnswerGreen) { Reach.call(context, number) } },
-            c.phones.firstOrNull()?.takeIf { Reach.canMessage(context) }?.let { number -> PillItem(AppIcons.Message, "Send a message", PillMotion.WIGGLE) { Reach.message(context, listOf(number)) } },
+            c.phones.firstOrNull()?.takeIf { Reach.canMessage(context) }?.let { number -> PillItem(AppIcons.Message, "Message", PillMotion.WIGGLE) { Reach.message(context, listOf(number)) } },
             if (c.phones.isEmpty()) c.emails.firstOrNull()?.let { email -> PillItem(AppIcons.Email, "Email", PillMotion.WIGGLE) { Reach.email(context, listOf(email)) } } else null,
-            PillItem(if (c.starred) AppIcons.StarOutline else AppIcons.Star, if (c.starred) "Remove from favorites" else "Add to favorites", PillMotion.BOUNCE, StarGold) {
+            PillItem(if (c.starred) AppIcons.StarOutline else AppIcons.Star, if (c.starred) "Unfavorite" else "Favorite", PillMotion.BOUNCE, StarGold) {
                 haptics.toggle(!c.starred)
                 scope.launch { writer.star(c.id, !c.starred) }
             },
             PillItem(AppIcons.Share, "Share", PillMotion.BOUNCE) { Reach.share(context, listOf(c.lookup), c.name) },
-            PillItem(AppIcons.CheckCircle, "Choose several", PillMotion.BOUNCE) { onSelect(c.id) },
+            PillItem(AppIcons.CheckCircle, "Select", PillMotion.BOUNCE) { onSelect(c.id) },
             PillItem(AppIcons.Delete, "Delete", PillMotion.DROP, AlertRed) { onDelete(c) }
-        )
+        ),
+        columns = 2
     )
 }
 
