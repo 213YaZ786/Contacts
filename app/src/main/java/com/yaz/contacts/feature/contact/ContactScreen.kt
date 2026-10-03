@@ -41,6 +41,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -283,7 +284,8 @@ private fun Header(d: Details) {
     Spacer(Modifier.height(14.dp))
     Text(d.display.ifBlank { "No name" }, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
     val phonetic = listOf(d.name.phoneticGiven, d.name.phoneticMiddle, d.name.phoneticFamily).filter { it.isNotBlank() }.joinToString(" ")
-    if (phonetic.isNotBlank()) Text(phonetic, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    // How their name is said: as written to be heard (phonetic), else as written, by the phone's own voice.
+    SayName(phonetic.ifBlank { d.display }, phonetic)
     val also = listOfNotNull(d.nickname?.value?.let { "“$it”" }, d.look.pronouns.takeIf { it.isNotBlank() }).joinToString(" · ")
     if (also.isNotBlank()) Text(also, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
     val work = listOf(d.organization.title, d.organization.department, d.organization.company).filter { it.isNotBlank() }.joinToString(" · ")
@@ -353,20 +355,89 @@ private fun SharedCard(d: Details) {
     }
 }
 
+@Composable
+private fun SayName(spoken: String, phonetic: String) {
+    val context = LocalContext.current
+    val haptics = rememberHaptics()
+    var voice by remember { mutableStateOf<android.speech.tts.TextToSpeech?>(null) }
+    DisposableEffect(Unit) { onDispose { voice?.shutdown() } }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (phonetic.isNotBlank()) Text(phonetic, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        IconButton(onClick = {
+            haptics.tick()
+            val ready = voice
+            if (ready != null) ready.speak(spoken, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "name")
+            else {
+                var made: android.speech.tts.TextToSpeech? = null
+                made = android.speech.tts.TextToSpeech(context.applicationContext) { status ->
+                    if (status == android.speech.tts.TextToSpeech.SUCCESS) made?.speak(spoken, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "name")
+                }
+                voice = made
+            }
+        }) { Icon(AppIcons.VolumeUp, "Say their name", tint = MaterialTheme.colorScheme.primary) }
+    }
+}
+
+/** What the user's own card gives when shared: each number, email, website and their work, ticked on or off. */
+@Composable
+private fun KeepBackDialog(d: Details, onDismiss: () -> Unit) {
+    val settingsStore: SettingsStore = koinInject()
+    val settings by settingsStore.settings.collectAsState()
+    val context = LocalContext.current
+    val haptics = rememberHaptics()
+    val S = com.yaz.contacts.core.contacts.Shareable
+    @Composable
+    fun Choice(key: String, title: String, note: String?) {
+        val on = key !in settings.keptBack
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).combinedClickableCompat {
+                haptics.toggle(!on)
+                settingsStore.update { it.copy(keptBack = if (on) it.keptBack + key else it.keptBack - key) }
+            }.padding(vertical = 6.dp)
+        ) {
+            androidx.compose.material3.Checkbox(checked = on, onCheckedChange = null)
+            Column(Modifier.padding(start = 10.dp)) {
+                Text(title, style = MaterialTheme.typography.bodyLarge)
+                note?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            }
+        }
+    }
+    com.yaz.contacts.ui.component.ZoneAlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(AppIcons.Share, null) },
+        title = { Text("What your card gives") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                Text("For your QR code and touching phones. Your name always goes.", style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(8.dp))
+                d.phones.distinctBy { S.key("tel", it.value) }.forEach { Choice(S.key("tel", it.value), Numbers.format(context, it.value), Field.PHONE.label(context.resources, it.kind, it.custom)) }
+                d.emails.forEach { Choice(S.key("mail", it.value), it.value, Field.EMAIL.label(context.resources, it.kind, it.custom)) }
+                d.websites.forEach { Choice(S.key("web", it.value), it.value, null) }
+                if (!d.organization.isEmpty) Choice(S.WORK, listOf(d.organization.title, d.organization.company).filter { it.isNotBlank() }.joinToString(" · "), "Work")
+            }
+        },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Done") } }
+    )
+}
+
 /** The ways to reach them, each a round pane of glass, wrapping onto a second line on a narrow screen. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Actions(d: Details, onQr: () -> Unit, onScan: () -> Unit, onTap: () -> Unit) {
+    var choosingFields by remember { mutableStateOf(false) }
     // The user's own card: only sharing it makes sense.
     if (android.provider.ContactsContract.isProfileId(d.id)) {
         val context = LocalContext.current
-        EvenRows(minSlot = 64.dp, modifier = Modifier.widthIn(max = 640.dp)) {
+        EvenRows(minSlot = 96.dp, modifier = Modifier.widthIn(max = 640.dp)) {
             // Touch phones, show mine, scan theirs: two phones swap cards face to face.
             if (com.yaz.contacts.BuildConfig.DEBUG || context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_NFC_HOST_CARD_EMULATION)) ActionTile(AppIcons.Nfc, "Touch phones", accent = true) { onTap() }
             ActionTile(AppIcons.QrCode, "My QR code") { onQr() }
             ActionTile(AppIcons.PhotoCamera, "Scan theirs") { onScan() }
             ActionTile(AppIcons.Share, "Share") { Reach.share(context, listOf(d.lookup), d.display) }
+            ActionTile(AppIcons.Edit, "What it gives") { choosingFields = true }
         }
+        if (choosingFields) KeepBackDialog(d) { choosingFields = false }
         return
     }
     val context = LocalContext.current

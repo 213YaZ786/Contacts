@@ -15,8 +15,8 @@ android {
         applicationId = "com.yaz.contacts"
         minSdk = 31
         targetSdk = 37
-        versionCode = 6
-        versionName = "0.6.0"
+        versionCode = 7
+        versionName = "0.7.0"
     }
 
     signingConfigs {
@@ -95,6 +95,9 @@ dependencies {
     implementation("com.googlecode.libphonenumber:libphonenumber:9.0.40")
     // A contact as a QR code, and a QR code read back into a contact: ZXing's core (Apache-2.0).
     implementation("com.google.zxing:core:3.5.4")
+    // The passphrase of an encrypted backup turned into its key with Argon2id
+    // (RFC 9106): Bouncy Castle's implementation (MIT licence).
+    implementation("org.bouncycastle:bcprov-jdk18on:1.86")
     // Scanning someone's QR code with the camera: Android's CameraX (Apache-2.0).
     implementation("androidx.camera:camera-camera2:1.6.2")
     implementation("androidx.camera:camera-lifecycle:1.6.2")

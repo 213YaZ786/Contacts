@@ -78,7 +78,11 @@ import kotlinx.coroutines.withContext
  */
 @Composable
 fun QrDialog(d: Details, onDismiss: () -> Unit) {
-    val code by produceState<ImageBitmap?>(null, d) { value = withContext(Dispatchers.Default) { qr(VCard.short(d)) } }
+    // The user's own card gives only what they chose; another person's card goes whole.
+    val settingsStore: com.yaz.contacts.data.settings.SettingsStore = org.koin.compose.koinInject()
+    val keptBack = settingsStore.current.keptBack
+    val shown = if (android.provider.ContactsContract.isProfileId(d.id)) com.yaz.contacts.core.contacts.Shareable.keep(d, keptBack) else d
+    val code by produceState<ImageBitmap?>(null, shown) { value = withContext(Dispatchers.Default) { qr(VCard.short(shown, look = android.provider.ContactsContract.isProfileId(d.id))) } }
     val pop = remember { Animatable(0.85f) }
     LaunchedEffect(code) { if (code != null) pop.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 400f)) }
     ZoneAlertDialog(

@@ -32,7 +32,15 @@ data class Contact(
     /** Their look, for the monogram in the list. */
     val look: Look? = null,
     /** Words found by the search beyond the name: notes, addresses, cities. */
-    val more: String = ""
+    val more: String = "",
+    /**
+     * Android's own index of the name in the phone's language (A, あ, ㄱ,
+     * the pinyin's Z…) and its collation key, first name and last name first.
+     */
+    val bucket: String = "",
+    val bucketAlt: String = "",
+    val sortKey: String = "",
+    val sortKeyAlt: String = ""
 )
 
 /** An account contacts are saved in: Google, CardDAV, the phone itself (type null). */
@@ -235,11 +243,20 @@ object Contacts {
         }
     }
 
-    /** The list's order: favourites apart, then everyone by the chosen name. */
+    /**
+     * The list's order: by the chosen name, the way the phone's language
+     * sorts it (Android's own collation, so Japanese, Chinese or Korean
+     * names fall where their readers expect); names without letters last.
+     */
     fun sorted(all: List<Contact>, order: SortOrder): List<Contact> {
         val key: (Contact) -> String = { sortKey(it, order) }
-        return all.sortedWith(compareBy<Contact>({ initialOf(key(it)) == "#" }, { People.plain(key(it)) }, { it.id }))
+        val collated: (Contact) -> String = { c -> (if (order == SortOrder.LAST_NAME) c.sortKeyAlt else c.sortKey).ifBlank { People.plain(key(c)) } }
+        return all.sortedWith(compareBy<Contact>({ bucketOf(it, order) == "#" }, { collated(it) }, { it.id }))
     }
+
+    /** The heading a person files under: Android's index in the phone's language, else the first letter. */
+    fun bucketOf(c: Contact, order: SortOrder): String =
+        (if (order == SortOrder.LAST_NAME) c.bucketAlt else c.bucket).takeIf { it.isNotBlank() && it != "…" } ?: initialOf(sortKey(c, order))
 
     /** The name a person is shown by: "Martin, Joëlle" when the user wants the last name first. */
     fun shown(c: Contact, lastFirst: Boolean): String = if (lastFirst) c.alternative.ifBlank { c.name } else c.name

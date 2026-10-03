@@ -110,6 +110,12 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koinViewMo
                         ?.let(::accountLabel) ?: "This phone",
                     onClick = { dialog = OpenDialog.ACCOUNT }
                 )
+                SwitchRow(
+                    title = "Only contacts with a number",
+                    summary = "People with only an email or an address stay out of the list.",
+                    checked = settings.onlyWithNumbers,
+                    onChange = viewModel::setOnlyWithNumbers
+                )
                 SettingRow(
                     title = "Contacts to show",
                     summary = if (settings.shownAccounts.isEmpty()) "All accounts" else accounts.filter { it.key in settings.shownAccounts }.joinToString(", ") { accountLabel(it) },

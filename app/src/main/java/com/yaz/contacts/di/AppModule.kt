@@ -19,6 +19,7 @@ val appModule = module {
     single { ContactWriter(androidContext()) }
     single { Trash(androidContext(), get()) }
     single { com.yaz.contacts.data.contacts.Snapshots(androidContext(), get(), get()) }
+    single { com.yaz.contacts.data.contacts.Backups(androidContext(), get(), get()) }
     single { com.yaz.contacts.core.handoff.Drafts() }
     single { com.yaz.contacts.data.contacts.Offers.get(androidContext()) }
     single { com.yaz.contacts.feature.common.UndoState() }

@@ -105,10 +105,10 @@ fun ListScreen(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onOpenSettings: () 
         else -> Filter.All
     }
     val order = settings.sortOrder
-    val people = remember(all, order, settings.shownAccounts) {
+    val people = remember(all, order, settings.shownAccounts, settings.onlyWithNumbers) {
         val list = all.orEmpty().let { list ->
             if (settings.shownAccounts.isEmpty()) list else list.filter { c -> c.accounts.any { it in settings.shownAccounts } }
-        }
+        }.let { list -> if (settings.onlyWithNumbers) list.filter { it.phones.isNotEmpty() } else list }
         Contacts.sorted(list, order)
     }
     val filtered = remember(people, filter) {
@@ -317,7 +317,7 @@ private fun PeopleList(
     onSelect: (Long) -> Unit
 ) {
     // Recent ones keep their order, newest first, under one heading.
-    val groups = remember(shown, order, grouped) { if (grouped) shown.groupBy { Contacts.initialOf(Contacts.sortKey(it, order)) } else mapOf("Changed lately" to shown) }
+    val groups = remember(shown, order, grouped) { if (grouped) shown.groupBy { Contacts.bucketOf(it, order) } else mapOf("Changed lately" to shown) }
     val rail = grouped && shown.size >= RAIL_FROM
     val list = rememberLazyListState()
     val scope = rememberCoroutineScope()

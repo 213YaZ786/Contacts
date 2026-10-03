@@ -281,7 +281,8 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                     }.getOrNull()?.let { com.yaz.contacts.core.security.SafeImages.decode(context, it, 1440) }
                 }?.asImageBitmap()
             }
-            val card = me?.let { com.yaz.contacts.core.vcard.VCard.short(it, look = true) }
+            val settingsStore: SettingsStore = koinInject()
+            val card = me?.let { com.yaz.contacts.core.vcard.VCard.short(com.yaz.contacts.core.contacts.Shareable.keep(it, settingsStore.current.keptBack), look = true) }
             com.yaz.contacts.feature.nfc.TapScreen(give = give, me = me, mePhoto = mePhoto, card = card, onBack = ::back, onCard = { text ->
                 nav.popBackStack()
                 nav.navigate("import?uri=" + Uri.encode("text:" + drafts.put(text)))

@@ -162,6 +162,7 @@ fun TidyScreen(onBack: () -> Unit, onOpen: (Long) -> Unit, onTrash: () -> Unit, 
                     }
                 })
             }
+            BackupZone(known)
             InfoZone("Going back") {
                 InfoRow(AppIcons.History, "Undo changes", "Your contacts as they were, up to 30 days ago", onClick = onUndo)
                 InfoRow(AppIcons.DeleteOutline, if (inTrash.isEmpty()) "Trash: empty" else "Trash: ${inTrash.size} deleted", "Kept ${settings.trashDays} days, then gone", onClick = onTrash)

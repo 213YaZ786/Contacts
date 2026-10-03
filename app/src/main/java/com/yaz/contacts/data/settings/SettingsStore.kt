@@ -44,7 +44,11 @@ data class Settings(
     val addX: Float = -1f,
     val addY: Float = -1f,
     /** A deleted contact waits this many days in the trash before it is gone. */
-    val trashDays: Int = 30
+    val trashDays: Int = 30,
+    /** Only people with a phone number in the list. */
+    val onlyWithNumbers: Boolean = false,
+    /** What stays out of the user's own card when shared (QR, touching phones): "tel:…", "mail:…", "web:…", "adr", "work", "bday". */
+    val keptBack: Set<String> = emptySet()
 )
 
 /**

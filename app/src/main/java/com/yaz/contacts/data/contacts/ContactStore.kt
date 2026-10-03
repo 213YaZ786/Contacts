@@ -109,19 +109,23 @@ class ContactStore(private val context: Context, private val scope: CoroutineSco
 
     private fun readAll(): List<Contact> = runCatching {
         val base = LinkedHashMap<Long, Contact>()
-        resolver.query(
-            ContactsContract.Contacts.CONTENT_URI,
-            arrayOf(
-                ContactsContract.Contacts._ID,
-                ContactsContract.Contacts.LOOKUP_KEY,
-                ContactsContract.Contacts.DISPLAY_NAME_PRIMARY,
-                ContactsContract.Contacts.DISPLAY_NAME_ALTERNATIVE,
-                ContactsContract.Contacts.PHOTO_THUMBNAIL_URI,
-                ContactsContract.Contacts.STARRED,
-                ContactsContract.Contacts.CONTACT_LAST_UPDATED_TIMESTAMP
-            ),
-            null, null, null
-        )?.use { c ->
+        val columns = arrayOf(
+            ContactsContract.Contacts._ID,
+            ContactsContract.Contacts.LOOKUP_KEY,
+            ContactsContract.Contacts.DISPLAY_NAME_PRIMARY,
+            ContactsContract.Contacts.DISPLAY_NAME_ALTERNATIVE,
+            ContactsContract.Contacts.PHOTO_THUMBNAIL_URI,
+            ContactsContract.Contacts.STARRED,
+            ContactsContract.Contacts.CONTACT_LAST_UPDATED_TIMESTAMP,
+            ContactsContract.Contacts.SORT_KEY_PRIMARY,
+            ContactsContract.Contacts.SORT_KEY_ALTERNATIVE
+        )
+        // Android's index of each name in the phone's language: columns its
+        // contacts store has always had but the SDK keeps unnamed; read when there.
+        val cursor = runCatching { resolver.query(ContactsContract.Contacts.CONTENT_URI, columns + arrayOf("phonebook_label", "phonebook_label_alt"), null, null, null) }.getOrNull()
+            ?: resolver.query(ContactsContract.Contacts.CONTENT_URI, columns, null, null, null)
+        cursor?.use { c ->
+            val labelled = c.columnCount > columns.size
             while (c.moveToNext()) {
                 val id = c.getLong(0)
                 val name = c.getString(2).orEmpty()
@@ -132,7 +136,11 @@ class ContactStore(private val context: Context, private val scope: CoroutineSco
                     alternative = c.getString(3) ?: name,
                     photo = c.getString(4),
                     starred = c.getInt(5) != 0,
-                    updated = c.getLong(6)
+                    updated = c.getLong(6),
+                    sortKey = c.getString(7).orEmpty(),
+                    sortKeyAlt = c.getString(8).orEmpty(),
+                    bucket = if (labelled) c.getString(9).orEmpty() else "",
+                    bucketAlt = if (labelled) c.getString(10).orEmpty() else ""
                 )
             }
         }
