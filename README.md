@@ -11,8 +11,9 @@ A contacts app for Android. No account, no tracking, no ads.
   calls with them and blocking in Dialer.
 - What your phone does for each person: their ringtone, their vibration,
   their colour on calls and messages, their calls sent to voicemail.
-- Every field Android keeps, photos framed in a circle, pronouns, the
-  account to save in.
+- Every field Android keeps, photos framed in a circle or a ready picture
+  (origami, illustrations, patterns), pronouns, the account to save in.
+- A person's page in their own colours, from their photo.
 - Your own card, shared as a QR code, or by touching another phone with
   Contacts; you choose what it gives. QR codes and paper business cards
   scanned into a new contact, read on the phone.
@@ -50,5 +51,6 @@ Works best with [Dialer](https://github.com/213YaZ786/Dialer) and
 
 MIT. Phone numbers: libphonenumber (Apache 2.0). QR codes: ZXing
 (Apache 2.0). Camera: CameraX (Apache 2.0). Text reading: Tesseract and
-Tesseract4Android (Apache 2.0). Encryption: Bouncy Castle (MIT). Icons:
+Tesseract4Android (Apache 2.0). Encryption: Bouncy Castle (MIT). Ready profile pictures: Chromium's
+default user images (BSD, Copyright The Chromium Authors). Icons:
 Material Icons (Apache 2.0).

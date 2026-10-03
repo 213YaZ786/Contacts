@@ -131,6 +131,7 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
     var photo by remember { mutableStateOf<Bitmap?>(null) }
     var removePhoto by remember { mutableStateOf(false) }
     var cropping by remember { mutableStateOf<Bitmap?>(null) }
+    var choosingPicture by remember { mutableStateOf(false) }
     var saving by remember { mutableStateOf(false) }
     var leaving by remember { mutableStateOf(false) }
     var choosingAccount by remember { mutableStateOf(false) }
@@ -200,13 +201,13 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
                 indication = null
             ) {
                 haptics.tick()
-                picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                choosingPicture = true
             }) {
                 val shown = photo
                 if (shown != null) Image(shown.asImageBitmap(), "Photo", contentScale = ContentScale.Crop, modifier = Modifier.size(120.dp).clip(CircleShape))
                 else ContactAvatar(d.name.display(), if (removePhoto) null else d.photo ?: d.thumbnail, 120.dp)
                 ZoneSurface(shape = CircleShape, accent = true, modifier = Modifier.size(38.dp)) {
-                    Box(contentAlignment = Alignment.Center) { Icon(AppIcons.AddPhoto, "Choose a photo", modifier = Modifier.size(20.dp)) }
+                    Box(contentAlignment = Alignment.Center) { Icon(AppIcons.AddPhoto, "Choose a picture", modifier = Modifier.size(20.dp)) }
                 }
             }
             if ((photo != null || (!removePhoto && d.photo != null))) {
@@ -274,6 +275,18 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
         }
     }
 
+    if (choosingPicture) PictureChoice(
+        onPhotos = {
+            choosingPicture = false
+            picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        },
+        onPicked = { ready ->
+            choosingPicture = false
+            photo = ready
+            removePhoto = false
+        },
+        onDismiss = { choosingPicture = false }
+    )
     cropping?.let { bitmap ->
         CropDialog(bitmap, onDismiss = { cropping = null }) { framed ->
             cropping = null
