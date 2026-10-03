@@ -22,12 +22,12 @@ import kotlinx.serialization.json.Json
 /**
  * Every contact in one file only the user's passphrase opens, to take to
  * a new phone without any account: fields, labels' names, look, a small
- * photo. Made and read on the phone; the file goes where the user puts it.
+ * photo, the private ones too. Made and read on the phone; the file goes where the user puts it.
  */
 class Backups(private val context: Context, private val store: ContactStore, private val writer: ContactWriter) {
 
     @Serializable
-    data class Person(val details: Details, val photo: String? = null)
+    data class Person(val details: Details, val photo: String? = null, val private: Boolean = false)
 
     @Serializable
     data class Book(val v: Int = 1, val at: Long, val people: List<Person>)
@@ -41,7 +41,7 @@ class Backups(private val context: Context, private val store: ContactStore, pri
             progress(i, all.size)
             val d = store.details(c.id) ?: return@mapIndexedNotNull null
             Person(d, smallPhoto(d))
-        }
+        } + PrivateBook.get(context).people.value.map { Person(it.details, it.photo, private = true) }
         val book = Book(at = System.currentTimeMillis(), people = people)
         val packed = ByteArrayOutputStream().also { out -> GZIPOutputStream(out).use { it.write(json.encodeToString(Book.serializer(), book).toByteArray()) } }.toByteArray()
         val sealed = Sealed.seal(packed, passphrase)
@@ -90,6 +90,15 @@ class Backups(private val context: Context, private val store: ContactStore, pri
         var done = 0
         book.people.forEachIndexed { i, p ->
             progress(i, book.people.size)
+            // Kept private on the old phone, kept private here.
+            if (p.private) {
+                // The photo drawn again in the isolated decoder, as anything from a file.
+                val photo = p.photo?.takeIf { it.length <= MAX_PHOTO }?.let { runCatching { Base64.decode(it, Base64.NO_WRAP) }.getOrNull() }
+                    ?.let { SafeImages.decode(context, it, 720) }
+                    ?.let { b -> Base64.encodeToString(ByteArrayOutputStream().also { b.compress(Bitmap.CompressFormat.JPEG, 85, it) }.toByteArray(), Base64.NO_WRAP) }
+                if (runCatching { PrivateBook.get(context).put(p.details, photo) }.isSuccess) done++
+                return@forEachIndexed
+            }
             val photo = p.photo?.let { runCatching { Base64.decode(it, Base64.NO_WRAP) }.getOrNull() }?.let { SafeImages.decode(context, it, 720) }
             // Labels belong to the old phone's accounts: they are left out.
             if (writer.save(null, Snapshot.fresh(p.details).copy(groups = emptySet()), account, photo) != null) done++
@@ -109,5 +118,6 @@ class Backups(private val context: Context, private val store: ContactStore, pri
     private companion object {
         const val MAX_FILE = 200 * 1024 * 1024
         const val MAX_UNPACKED = 400 * 1024 * 1024
+        const val MAX_PHOTO = 300 * 1024
     }
 }

@@ -18,6 +18,11 @@
     <uses-permission android:name="com.yaz.sms.permission.PEOPLE" />
     <uses-permission android:name="com.yaz.sms.debug.permission.PEOPLE" />
 
+    <!-- Only apps signed with the user's own key (Dialer, SMS) may ask the name of a private number. -->
+    <permission
+        android:name="${applicationId}.permission.PRIVATE"
+        android:protectionLevel="signature" />
+
     <!-- One request to GitHub when the app opens, for the newest release. Nothing else goes out. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Only used when the user chooses to install updates from the app; Android asks them then. -->
@@ -219,6 +224,13 @@
             android:authorities="${applicationId}.cards"
             android:exported="true"
             android:permission="${applicationId}.permission.CARDS" />
+
+        <!-- The name of a number kept private, for Dialer and SMS only; nothing can be listed. -->
+        <provider
+            android:name=".data.contacts.PrivateProvider"
+            android:authorities="${applicationId}.private"
+            android:exported="true"
+            android:permission="${applicationId}.permission.PRIVATE" />
 
         <!-- The user's card as an NFC tag while the sharing screen is open.
              Only Android's NFC service may bind it. -->

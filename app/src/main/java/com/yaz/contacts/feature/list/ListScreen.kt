@@ -73,6 +73,7 @@ sealed interface Filter {
     data object Favorites : Filter
     data object Recent : Filter
     data class Label(val id: Long) : Filter
+    data object Private : Filter
 }
 
 /**
@@ -82,12 +83,14 @@ sealed interface Filter {
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ListScreen(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onOpenSettings: () -> Unit, onOpenTidy: () -> Unit) {
+fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe: () -> Unit, onOpenSettings: () -> Unit, onOpenTidy: () -> Unit) {
     val store: ContactStore = koinInject()
     val settingsStore: SettingsStore = koinInject()
     val settings by settingsStore.settings.collectAsState()
     val all by store.contacts.collectAsState()
     val groups by store.groups.collectAsState()
+    val privateBook: com.yaz.contacts.data.contacts.PrivateBook = koinInject()
+    val hidden by privateBook.people.collectAsState()
     // Read again on coming back: the permission may have been given meanwhile.
     var canRead by remember { mutableStateOf(store.canRead()) }
     androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
@@ -101,6 +104,7 @@ fun ListScreen(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onOpenSettings: () 
     val filter: Filter = when {
         filterKey == "fav" -> Filter.Favorites
         filterKey == "recent" -> Filter.Recent
+        filterKey == "private" -> Filter.Private
         filterKey.startsWith("label/") -> filterKey.removePrefix("label/").toLongOrNull()?.let { Filter.Label(it) } ?: Filter.All
         else -> Filter.All
     }
@@ -118,6 +122,7 @@ fun ListScreen(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onOpenSettings: () 
             // Changed in the last 30 days, newest first.
             Filter.Recent -> people.filter { it.updated > System.currentTimeMillis() - 30L * 24 * 3600 * 1000 }.sortedByDescending { it.updated }
             is Filter.Label -> people.filter { filter.id in it.groups }
+            Filter.Private -> emptyList()
         }
     }
     val shown = remember(filtered, query) { Contacts.search(filtered, query) }
@@ -194,6 +199,7 @@ fun ListScreen(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onOpenSettings: () 
                                 if (favorites.isNotEmpty()) TextControl("Favorites", filter == Filter.Favorites) { filterKey = "fav" }
                                 TextControl("Recent", filter == Filter.Recent) { filterKey = "recent" }
                                 usedLabels.forEach { g -> TextControl(g.title, (filter as? Filter.Label)?.id == g.id) { filterKey = "label/${g.id}" } }
+                                if (hidden.isNotEmpty() || filter == Filter.Private) TextControl("Private", filter == Filter.Private) { filterKey = "private" }
                             }
                         }
                     }
@@ -207,6 +213,7 @@ fun ListScreen(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onOpenSettings: () 
                     icon = AppIcons.Contacts,
                     modifier = Modifier.fillMaxSize().padding(padding)
                 )
+                filter == Filter.Private -> PrivateList(hidden, query, padding, onOpenPrivate)
                 all == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { LoadingMark(size = 72.dp) }
                 people.isEmpty() -> EmptyZone(
                     title = "No contacts yet",
@@ -544,3 +551,46 @@ private val NO_CARD = Contact(-1L, "", "", "", null, false)
 /** From this many contacts, the letters stand at the edge of the list. */
 private const val RAIL_FROM = 12
 
+
+/** The people kept private, found by name, number or email. */
+@Composable
+private fun PrivateList(people: List<com.yaz.contacts.data.contacts.PrivateBook.Person>, query: String, padding: androidx.compose.foundation.layout.PaddingValues, onOpen: (String) -> Unit) {
+    val q = query.trim().lowercase()
+    val digits = q.filter(Char::isDigit)
+    val shown = remember(people, q) {
+        if (q.isBlank()) people else people.filter { p ->
+            val d = p.details
+            d.display.lowercase().contains(q) ||
+                d.emails.any { it.value.lowercase().contains(q) } ||
+                (digits.length >= 3 && d.phones.any { it.value.filter(Char::isDigit).contains(digits) })
+        }
+    }
+    if (shown.isEmpty()) {
+        EmptyZone(
+            title = if (people.isEmpty()) "No one private" else "No one found",
+            message = if (people.isEmpty()) "Keep someone private from their page: they stay only here, sealed." else "No private contact matches \"$query\".",
+            icon = AppIcons.Lock,
+            modifier = Modifier.fillMaxSize().padding(padding)
+        )
+        return
+    }
+    androidx.compose.foundation.lazy.LazyColumn(
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding() + 8.dp, bottom = padding.calculateBottomPadding() + 96.dp),
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        items(shown.size, key = { shown[it].id }) { i ->
+            val p = shown[i]
+            PersonLine(
+                name = p.details.display,
+                photo = null,
+                subtitle = p.details.phones.firstOrNull()?.value ?: p.details.emails.firstOrNull()?.value,
+                starred = false,
+                onOpen = { onOpen(p.id) },
+                look = p.details.look,
+                modifier = Modifier.animateItem()
+            )
+        }
+    }
+}

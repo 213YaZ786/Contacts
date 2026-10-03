@@ -18,6 +18,9 @@ object Routes {
     const val CARD = "card"
     const val POSTER = "poster/{id}"
     const val TAP = "tap?give={give}"
+    const val PRIVATE = "private/{id}"
+
+    fun private(id: String) = "private/$id"
 
     fun tap(give: Boolean) = "tap?give=$give"
 

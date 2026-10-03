@@ -36,6 +36,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.TextButton
+import com.yaz.contacts.ui.component.ZoneAlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -99,10 +101,11 @@ import org.koin.compose.koinInject
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDeleted: () -> Unit, onMoved: (Long) -> Unit = { onDeleted() }, onScan: () -> Unit = {}, onPoster: (Long) -> Unit = {}, onTap: () -> Unit = {}) {
+fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDeleted: () -> Unit, onMoved: (Long) -> Unit = { onDeleted() }, onScan: () -> Unit = {}, onPoster: (Long) -> Unit = {}, onTap: () -> Unit = {}, onPrivate: (String) -> Unit = { onDeleted() }) {
     val store: ContactStore = koinInject()
     val writer: ContactWriter = koinInject()
     val trash: Trash = koinInject()
+    val privateBook: com.yaz.contacts.data.contacts.PrivateBook = koinInject()
     val settingsStore: SettingsStore = koinInject()
     val settings by settingsStore.settings.collectAsState()
     val changes by store.changes.collectAsState()
@@ -118,6 +121,7 @@ fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDelete
         loaded = true
     }
     var deleting by remember { mutableStateOf(false) }
+    var hiding by remember { mutableStateOf(false) }
     var showQr by remember { mutableStateOf(false) }
     var choosingColour by remember { mutableStateOf(false) }
     var choosingVibration by remember { mutableStateOf(false) }
@@ -211,7 +215,7 @@ fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDelete
                             scope.launch { writer.save(d, d.copy(look = d.look.copy(bypass = on)), null) }
                         }
                     )
-                    Elsewhere(d, onDelete = { deleting = true }, onMove = { moving = true }, onSeparate = {
+                    Elsewhere(d, onDelete = { deleting = true }, onMove = { moving = true }, onPrivate = { hiding = true }, onSeparate = {
                         scope.launch {
                             if (writer.separate(d)) {
                                 haptics.done()
@@ -240,6 +244,31 @@ fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDelete
             }
         }
     }
+    if (hiding) ZoneAlertDialog(
+        onDismissRequest = { hiding = false },
+        icon = { Icon(AppIcons.Lock, null) },
+        title = { Text("Keep ${d.display.ifBlank { "them" }} private?") },
+        text = {
+            Text(
+                "They leave the phone's contacts" + (d.accounts.firstOrNull { it.type != null }?.let { " and ${accountLabel(it)}" } ?: "") +
+                    " and stay only in Contacts, sealed on this phone. Dialer and SMS still show their name; other apps no longer see them. " +
+                    "They are in your encrypted backup."
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                hiding = false
+                scope.launch {
+                    val person = privateBook.hide(context, d, writer)
+                    if (person != null) {
+                        haptics.done()
+                        onPrivate(person.id)
+                    } else haptics.reject()
+                }
+            }) { Text("Keep private") }
+        },
+        dismissButton = { TextButton(onClick = { hiding = false }) { Text("Cancel") } }
+    )
     if (showQr) QrDialog(d, onDismiss = { showQr = false })
     if (moving) MoveDialog(d, onDismiss = { moving = false }) { account ->
         moving = false
@@ -507,7 +536,7 @@ private fun ShareChoice(icon: ImageVector, title: String, note: String, onClick:
 
 /** Everything the contact holds, a zone per kind, only the kinds it has. */
 @Composable
-private fun Fields(d: Details) {
+internal fun Fields(d: Details) {
     val context = LocalContext.current
     val res = context.resources
     // The same number in two merged accounts is shown once.
@@ -659,7 +688,7 @@ private fun OnThisPhone(d: Details, onRingtone: () -> Unit, onVoicemail: (Boolea
 
 /** The calls (Dialer), blocking (Dialer), where the contact is saved, separating, deleting. */
 @Composable
-private fun Elsewhere(d: Details, onDelete: () -> Unit, onSeparate: () -> Unit, onMove: () -> Unit) {
+private fun Elsewhere(d: Details, onDelete: () -> Unit, onSeparate: () -> Unit, onMove: () -> Unit, onPrivate: () -> Unit) {
     val context = LocalContext.current
     val number = d.phones.firstOrNull()?.value?.takeIf { !android.provider.ContactsContract.isProfileId(d.id) }
     InfoZone("More") {
@@ -673,6 +702,7 @@ private fun Elsewhere(d: Details, onDelete: () -> Unit, onSeparate: () -> Unit, 
         })
         InfoRow(AppIcons.Account, d.accounts.joinToString(", ") { accountLabel(it) }, if (d.readOnly) "Saved in" else "Saved in · tap to move", onClick = if (d.readOnly || android.provider.ContactsContract.isProfileId(d.id)) null else onMove)
         if (d.raws.size > 1) InfoRow(AppIcons.PersonRemove, "Separate", "Back into ${d.raws.size} contacts", onClick = onSeparate)
+        if (!d.readOnly && !android.provider.ContactsContract.isProfileId(d.id)) InfoRow(AppIcons.Lock, "Keep private", "Only in Contacts, out of sight of other apps", onClick = onPrivate)
         if (!d.readOnly) InfoRow(AppIcons.Delete, "Delete", null, onClick = onDelete, tint = AlertRed)
     }
 }

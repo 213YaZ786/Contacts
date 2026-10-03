@@ -84,7 +84,9 @@ fun TalkedOften(people: List<Contact>, onSave: (String) -> Unit) {
     val haptics = rememberHaptics()
     val store: SettingsStore = koinInject()
     val settings by store.settings.collectAsState()
-    val saved = people.flatMap { c -> c.phones.map { it.filter(Char::isDigit).takeLast(9) } }.toSet()
+    val hidden by org.koin.compose.koinInject<com.yaz.contacts.data.contacts.PrivateBook>().people.collectAsState()
+    val saved = (people.flatMap { c -> c.phones.map { it.filter(Char::isDigit).takeLast(9) } } +
+        hidden.flatMap { p -> p.details.phones.map { it.value.filter(Char::isDigit).takeLast(9) } }).toSet()
     val often by produceState<List<Pair<String, Int>>>(emptyList(), saved.size) { value = Talks.frequent(context) }
     val shown = often.filter { (n, _) -> n.filter(Char::isDigit).takeLast(9) !in saved && n !in settings.notToSave }.take(5)
     if (shown.isEmpty()) return

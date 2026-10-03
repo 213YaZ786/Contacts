@@ -155,6 +155,7 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                 onScan = { nav.navigate(Routes.SCAN) },
                 onPoster = { nav.navigate(Routes.poster(it)) },
                 onTap = { nav.navigate(Routes.tap(true)) },
+                onPrivate = { nav.navigate(Routes.private(it)) },
                 onOpenSettings = { nav.navigate(Routes.SETTINGS) },
                 onOpenTidy = { nav.navigate(Routes.TIDY) },
                 onAdd = { nav.navigate(Routes.edit()) }
@@ -175,8 +176,21 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                     onMoved = { moved ->
                         nav.popBackStack()
                         nav.navigate(Routes.contact(moved))
+                    },
+                    onPrivate = { hidden ->
+                        nav.popBackStack()
+                        nav.navigate(Routes.private(hidden))
                     }
                 )
+            }
+        }
+        composable(Routes.PRIVATE) { entry ->
+            val id = entry.arguments?.getString("id") ?: return@composable
+            ReadableScroll {
+                com.yaz.contacts.feature.contact.PrivateScreen(id = id, onBack = ::back, onPublic = { shown ->
+                    nav.popBackStack()
+                    nav.navigate(Routes.contact(shown))
+                })
             }
         }
         composable(
@@ -335,7 +349,7 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
 
 /** The list, the way to a new contact floating over it, the first launch page until closed. */
 @Composable
-private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) -> Unit, onScan: () -> Unit, onPoster: (Long) -> Unit, onTap: () -> Unit, onOpenSettings: () -> Unit, onOpenTidy: () -> Unit, onAdd: () -> Unit) {
+private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) -> Unit, onScan: () -> Unit, onPoster: (Long) -> Unit, onTap: () -> Unit, onPrivate: (String) -> Unit, onOpenSettings: () -> Unit, onOpenTidy: () -> Unit, onAdd: () -> Unit) {
     val store: SettingsStore = koinInject()
     var showWelcome by rememberSaveable { mutableStateOf(!store.current.welcomeSeen) }
     val settings by store.settings.collectAsState()
@@ -349,10 +363,10 @@ private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) ->
         val wide = maxWidth >= 840.dp
         Box(Modifier.fillMaxSize().then(if (look != null) Modifier.glassSource(backdrop, look) else Modifier)) {
             if (!wide) {
-                ReadableScroll { ListScreen(onOpen = onOpen, onMakeMe = onMakeMe, onOpenSettings = onOpenSettings, onOpenTidy = onOpenTidy) }
+                ReadableScroll { ListScreen(onOpen = onOpen, onOpenPrivate = onPrivate, onMakeMe = onMakeMe, onOpenSettings = onOpenSettings, onOpenTidy = onOpenTidy) }
             } else androidx.compose.foundation.layout.Row(Modifier.fillMaxSize()) {
                 Box(Modifier.weight(0.42f).fillMaxSize()) {
-                    ListScreen(onOpen = { picked = it }, onMakeMe = { picked = null; onMakeMe() }, onOpenSettings = onOpenSettings, onOpenTidy = onOpenTidy)
+                    ListScreen(onOpen = { picked = it }, onOpenPrivate = onPrivate, onMakeMe = { picked = null; onMakeMe() }, onOpenSettings = onOpenSettings, onOpenTidy = onOpenTidy)
                 }
                 Box(Modifier.weight(0.58f).fillMaxSize()) {
                     androidx.compose.animation.Crossfade(picked, label = "pane") { id ->
@@ -361,7 +375,7 @@ private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) ->
                             message = "Their page opens here.",
                             icon = AppIcons.Person,
                             modifier = Modifier.fillMaxSize()
-                        ) else ContactScreen(id = id, onBack = { picked = null }, onEdit = onEdit, onDeleted = { picked = null }, onMoved = { picked = it }, onScan = onScan, onPoster = onPoster, onTap = onTap)
+                        ) else ContactScreen(id = id, onBack = { picked = null }, onEdit = onEdit, onDeleted = { picked = null }, onMoved = { picked = it }, onScan = onScan, onPoster = onPoster, onTap = onTap, onPrivate = { picked = null; onPrivate(it) })
                     }
                 }
             }
