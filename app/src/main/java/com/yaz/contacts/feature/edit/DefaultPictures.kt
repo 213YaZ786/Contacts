@@ -25,6 +25,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,7 +52,7 @@ fun PictureChoice(onPhotos: () -> Unit, onPicked: (Bitmap) -> Unit, onDismiss: (
     val haptics = rememberHaptics()
     val names = remember { context.assets.list("avatars").orEmpty().filter { it.endsWith(".webp") }.sorted() }
     val groups = remember(names) {
-        listOf("origami" to "Origami", "illustration" to "Illustrations", "abstract" to "Abstract", "geo" to "Patterns")
+        listOf("origami" to "Origami", "illustration" to "Drawings", "abstract" to "Abstract", "geo" to "Patterns")
             .map { (key, title) -> title to names.filter { it.startsWith(key + "_") } }
             .filter { it.second.isNotEmpty() }
     }
@@ -60,22 +61,25 @@ fun PictureChoice(onPhotos: () -> Unit, onPicked: (Bitmap) -> Unit, onDismiss: (
         icon = { Icon(AppIcons.AddPhoto, null) },
         title = { Text("Their picture") },
         text = {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(64.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.heightIn(max = 460.dp)
-            ) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    TextButton(onClick = { haptics.tick(); onPhotos() }, modifier = Modifier.fillMaxWidth()) {
-                        Icon(AppIcons.Photo, null)
-                        Text("From your photos", modifier = Modifier.padding(start = 8.dp))
+            // The kinds on top, each its own grid: no long scroll through all of them.
+            var tab by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableIntStateOf(0) }
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                TextButton(onClick = { haptics.tick(); onPhotos() }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(AppIcons.Photo, null)
+                    Text("From your photos", modifier = Modifier.padding(start = 8.dp))
+                }
+                com.yaz.contacts.feature.common.EvenRows(minSlot = 88.dp) {
+                    groups.forEachIndexed { i, (title, _) ->
+                        com.yaz.contacts.feature.common.TextControl(title, tab == i) { haptics.tick(); tab = i }
                     }
                 }
-                groups.forEach { (title, files) ->
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 6.dp))
-                    }
+                val files = groups.getOrNull(tab)?.second.orEmpty()
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(64.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.heightIn(max = 380.dp)
+                ) {
                     items(files, key = { it }) { name ->
                         val thumb by produceState<ImageBitmap?>(null, name) { value = withContext(Dispatchers.IO) { load(context, name)?.asImageBitmap() } }
                         Box(
