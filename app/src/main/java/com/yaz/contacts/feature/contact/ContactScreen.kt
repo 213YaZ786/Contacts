@@ -145,6 +145,13 @@ fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDelete
         scope.launch { writer.save(d, d.copy(look = d.look.copy(tone = value)), null) }
     }
 
+    // The page in the person's colours: the one chosen for them, else their photo's.
+    val seed by produceState<Color?>(null, details?.photo, details?.thumbnail, details?.look?.color) {
+        val d = details
+        value = d?.look?.color?.takeIf { it != 0 }?.let { Color(it) }
+            ?: com.yaz.contacts.ui.theme.PersonColours.of(context, d?.thumbnail ?: d?.photo)
+    }
+    com.yaz.contacts.ui.theme.PersonTheme(seed) {
     FloatingFrame(
         bottom = 24.dp,
         top = {
@@ -230,6 +237,7 @@ fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDelete
         }
     }
 
+    }
     val d = details ?: return
     if (deleting) {
         DeleteQuestion(d.display.ifBlank { "this contact" }, settings.trashDays, onDismiss = { deleting = false }) {
