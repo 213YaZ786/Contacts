@@ -96,8 +96,17 @@ import kotlin.math.roundToInt
  * (a result for a pick or a save, nothing when cancelled).
  */
 @Composable
-fun ContactsApp(start: String, finish: ((Intent?) -> Unit)? = null) {
+fun ContactsApp(start: String, finish: ((Intent?) -> Unit)? = null, then: androidx.compose.runtime.MutableState<String?>? = null) {
     val navController = rememberNavController()
+    // A screen asked from outside the list (an icon shortcut), opened over it once.
+    val next = then?.value
+    androidx.compose.runtime.LaunchedEffect(next) {
+        if (next != null) {
+            navController.popBackStack(start, inclusive = false)
+            navController.navigate(next)
+            then.value = null
+        }
+    }
     // The only owner of the window insets: screens below draw under the bars
     // and take them as padding themselves. Transparent, because the page's
     // ground with its ambient light is painted once under the whole app.

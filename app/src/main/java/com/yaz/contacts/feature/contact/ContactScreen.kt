@@ -53,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -559,6 +560,12 @@ private fun Elsewhere(d: Details, onDelete: () -> Unit, onSeparate: () -> Unit, 
     InfoZone("More") {
         if (number != null && Reach.canShowCalls(context)) InfoRow(AppIcons.History, "Calls with them", "In Dialer", onClick = { Reach.calls(context, number) })
         if (number != null) InfoRow(AppIcons.Block, "Block", if (Reach.canShowCalls(context)) "In Dialer, for calls and messages" else "Android's blocked numbers", onClick = { Reach.block(context, number) })
+        val scope = rememberCoroutineScope()
+        val accent = MaterialTheme.colorScheme.primary.toArgb()
+        val haptics = rememberHaptics()
+        InfoRow(AppIcons.Add, "Add to the home screen", null, onClick = {
+            scope.launch { if (com.yaz.contacts.core.handoff.Shortcuts.pin(context, d, accent)) haptics.done() else haptics.reject() }
+        })
         InfoRow(AppIcons.Account, d.accounts.joinToString(", ") { accountLabel(it) }, if (d.readOnly) "Saved in" else "Saved in · tap to move", onClick = if (d.readOnly || android.provider.ContactsContract.isProfileId(d.id)) null else onMove)
         if (d.raws.size > 1) InfoRow(AppIcons.PersonRemove, "Separate", "Back into ${d.raws.size} contacts", onClick = onSeparate)
         if (!d.readOnly) InfoRow(AppIcons.Delete, "Delete", null, onClick = onDelete, tint = AlertRed)

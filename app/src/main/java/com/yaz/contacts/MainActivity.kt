@@ -25,8 +25,26 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // Nothing of another app can float over Save or Delete.
         window.setHideOverlayWindows(true)
-        setContent { AppSurface { ContactsApp(Routes.LIST) } }
+        if (savedInstanceState == null) asked.value = routeOf(intent)
+        setContent { AppSurface { ContactsApp(Routes.LIST, then = asked) } }
         hideWhenAsked(this, settings)
+        // The icon's own shortcuts (a long press on it): new contact, scan.
+        com.yaz.contacts.core.handoff.Shortcuts.publish(this)
+    }
+
+    /** What a shortcut on the app's icon asked for, opened over the list. */
+    private val asked = androidx.compose.runtime.mutableStateOf<String?>(null)
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        asked.value = routeOf(intent)
+    }
+
+    private fun routeOf(intent: android.content.Intent?): String? = when (intent?.action) {
+        com.yaz.contacts.core.handoff.Shortcuts.ACTION_NEW -> Routes.edit()
+        com.yaz.contacts.core.handoff.Shortcuts.ACTION_SCAN -> Routes.SCAN
+        else -> null
     }
 }
 

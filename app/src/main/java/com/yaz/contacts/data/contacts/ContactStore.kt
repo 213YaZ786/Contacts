@@ -144,11 +144,12 @@ class ContactStore(private val context: Context, private val scope: CoroutineSco
         val groups = HashMap<Long, MutableSet<Long>>()
         val birthday = HashMap<Long, String>()
         val looks = HashMap<Long, Look>()
+        val more = HashMap<Long, StringBuilder>()
         resolver.query(
             Data.CONTENT_URI,
             arrayOf(Data.CONTACT_ID, Data.MIMETYPE, Data.DATA1, Data.DATA2),
-            "${Data.MIMETYPE} IN (?,?,?,?,?,?,?)",
-            arrayOf(Phone.CONTENT_ITEM_TYPE, Email.CONTENT_ITEM_TYPE, Org.CONTENT_ITEM_TYPE, Nickname.CONTENT_ITEM_TYPE, GroupMembership.CONTENT_ITEM_TYPE, Event.CONTENT_ITEM_TYPE, LookCodec.MIMETYPE),
+            "${Data.MIMETYPE} IN (?,?,?,?,?,?,?,?,?)",
+            arrayOf(Phone.CONTENT_ITEM_TYPE, Email.CONTENT_ITEM_TYPE, Org.CONTENT_ITEM_TYPE, Nickname.CONTENT_ITEM_TYPE, GroupMembership.CONTENT_ITEM_TYPE, Event.CONTENT_ITEM_TYPE, LookCodec.MIMETYPE, Note.CONTENT_ITEM_TYPE, StructuredPostal.CONTENT_ITEM_TYPE),
             null
         )?.use { c ->
             while (c.moveToNext()) {
@@ -162,6 +163,8 @@ class ContactStore(private val context: Context, private val scope: CoroutineSco
                     GroupMembership.CONTENT_ITEM_TYPE -> value.toLongOrNull()?.let { groups.getOrPut(id) { mutableSetOf() } += it }
                     Event.CONTENT_ITEM_TYPE -> if (c.getInt(3) == Event.TYPE_BIRTHDAY) birthday.putIfAbsent(id, value)
                     LookCodec.MIMETYPE -> looks.putIfAbsent(id, LookCodec.decode(value))
+                    // Notes and addresses, only to be searched; capped so a long note stays light.
+                    Note.CONTENT_ITEM_TYPE, StructuredPostal.CONTENT_ITEM_TYPE -> more.getOrPut(id) { StringBuilder() }.let { if (it.length < 600) it.append(value.take(300)).append(' ') }
                 }
             }
         }
@@ -189,7 +192,8 @@ class ContactStore(private val context: Context, private val scope: CoroutineSco
                 groups = groups[id].orEmpty(),
                 accounts = accounts[id].orEmpty(),
                 birthday = birthday[id],
-                look = looks[id]
+                look = looks[id],
+                more = more[id]?.toString().orEmpty()
             )
         }
     }.getOrNull().orEmpty()

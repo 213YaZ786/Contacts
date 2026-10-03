@@ -30,7 +30,9 @@ data class Contact(
     /** Birthday as Android keeps it, --MM-DD or YYYY-MM-DD, when there is one. */
     val birthday: String? = null,
     /** Their look, for the monogram in the list. */
-    val look: Look? = null
+    val look: Look? = null,
+    /** Words found by the search beyond the name: notes, addresses, cities. */
+    val more: String = ""
 )
 
 /** An account contacts are saved in: Google, CardDAV, the phone itself (type null). */
@@ -227,6 +229,7 @@ object Contacts {
             val text = People.plain(listOfNotNull(c.name, c.alternative, c.nickname, c.company).joinToString(" "))
             val starts = text.split(' ', '-', '.', '\'')
             words.all { w -> starts.any { it.startsWith(w) } || text.contains(w) && w.length >= 3 } ||
+                (q.length >= 3 && People.plain(c.more).contains(q)) ||
                 (digits.length >= 2 && digits.length >= query.count { !it.isWhitespace() } - 1 && c.phones.any { it.filter(Char::isDigit).contains(digits) }) ||
                 (q.length >= 2 && c.emails.any { People.plain(it).contains(q) })
         }
