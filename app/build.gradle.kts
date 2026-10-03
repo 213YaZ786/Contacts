@@ -6,13 +6,13 @@ plugins {
 }
 
 android {
-    namespace = "com.contacts.app"
+    namespace = "com.contact.app"
     // 37 because Compose compiles against it, and the app follows the
     // newest platform rules for contacts, notifications and permissions.
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.contacts.app"
+        applicationId = "com.contact.app"
         minSdk = 31
         targetSdk = 37
         versionCode = 1
