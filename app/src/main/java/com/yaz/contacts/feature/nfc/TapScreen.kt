@@ -51,7 +51,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -101,6 +100,23 @@ fun TapScreen(give: Boolean, me: Details?, mePhoto: ImageBitmap?, card: String?,
         onPauseOrDispose { }
     }
     var receiving by remember { mutableStateOf(!give) }
+    // NFC for the time of the touch: Android's own NFC panel over the screen
+    // when it is off (an app cannot switch it itself), and again on leaving,
+    // to put it back off in one tap.
+    var turnedOnHere by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var asked by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (adapter != null && !adapter.isEnabled && !asked) {
+            asked = true
+            turnedOnHere = true
+            openNfcPanel(context)
+        }
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            if (turnedOnHere && adapter?.isEnabled == true && activity?.isChangingConfigurations != true) openNfcPanel(context)
+        }
+    }
     var touch by remember { mutableStateOf<Touch>(Touch.Waiting) }
     val got by rememberUpdatedState(onCard)
 
@@ -129,10 +145,13 @@ fun TapScreen(give: Boolean, me: Details?, mePhoto: ImageBitmap?, card: String?,
             adapter != null && !on -> {
                 EmptyZone(
                     title = "NFC is off",
-                    message = "Turn it on to swap cards by touching phones.",
+                    message = "Turn it on to swap cards by touching phones. On leaving, you can turn it back off in one tap.",
                     icon = AppIcons.Nfc,
                     actionLabel = "Turn on NFC",
-                    onAction = { runCatching { context.startActivity(Intent(Settings.ACTION_NFC_SETTINGS)) } },
+                    onAction = {
+                        turnedOnHere = true
+                        openNfcPanel(context)
+                    },
                     modifier = Modifier.fillMaxSize().padding(padding)
                 )
                 return@FloatingFrame
@@ -225,59 +244,96 @@ fun TapScreen(give: Boolean, me: Details?, mePhoto: ImageBitmap?, card: String?,
 
 /**
  * The poster on stage: the user's when giving (an empty glass phone when
- * getting), a light breathing on its top edge; a wave of light running
- * down through it when the card goes; theirs coming down from the top.
+ * getting), a light breathing on its top edge, the side that touches.
+ * The card rides a wave: sent, a wave rises from below and pushes the
+ * poster up and away to the other phone, then it comes back; received,
+ * a wave comes down from the top edge and carries their poster in.
  */
 @Composable
 private fun Stage(me: Details?, mePhoto: ImageBitmap?, receiving: Boolean, touch: Touch, modifier: Modifier) {
-    val density = LocalDensity.current
-    val breath by rememberInfiniteTransition(label = "edge").animateFloat(0.45f, 1f, infiniteRepeatable(tween(1100), RepeatMode.Reverse), label = "breath")
+    val breath by rememberInfiniteTransition(label = "edge").animateFloat(0.55f, 1f, infiniteRepeatable(tween(1100), RepeatMode.Reverse), label = "breath")
     val shimmer by rememberInfiniteTransition(label = "shimmer").animateFloat(-0.3f, 1.3f, infiniteRepeatable(tween(1800, easing = LinearEasing)), label = "x")
+    // The wave's travel, 0 to 1, and the poster it carries (in heights of the stage, up is negative).
     val wave = remember { Animatable(0f) }
-    val lift = remember { Animatable(0f) }
-    val drop = remember { Animatable(-1.2f) }
+    val ride = remember { Animatable(0f) }
+    val fade = remember { Animatable(1f) }
     LaunchedEffect(touch) {
         when (touch) {
             Touch.Waiting -> {
-                lift.snapTo(0f)
-                drop.snapTo(-1.2f)
                 wave.snapTo(0f)
+                ride.snapTo(0f)
+                fade.snapTo(1f)
             }
             Touch.Sent -> {
                 wave.snapTo(0f)
-                launch { wave.animateTo(1f, tween(750, easing = FastOutSlowInEasing)) }
-                delay(380)
-                // Lifted towards the other phone, then back in place.
-                lift.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 260f))
-                delay(500)
-                lift.animateTo(0f, spring(dampingRatio = 0.7f, stiffness = 200f))
+                launch { wave.animateTo(1f, tween(1100, easing = FastOutSlowInEasing)) }
+                delay(220)
+                // Pushed up by the crest, out through the top edge.
+                launch { fade.animateTo(0f, tween(520)) }
+                ride.animateTo(-1.25f, tween(640, easing = FastOutSlowInEasing))
+                delay(700)
+                // Still the user's card: it comes back up from below.
+                ride.snapTo(0.6f)
+                launch { fade.animateTo(1f, tween(300)) }
+                ride.animateTo(0f, spring(dampingRatio = 0.8f, stiffness = 220f))
             }
             is Touch.Got -> {
-                drop.snapTo(-1.2f)
                 wave.snapTo(0f)
-                launch { drop.animateTo(0f, spring(dampingRatio = 0.8f, stiffness = 200f)) }
-                delay(250)
-                wave.animateTo(1f, tween(800, easing = FastOutSlowInEasing))
+                ride.snapTo(-1.25f)
+                fade.snapTo(0f)
+                launch { wave.animateTo(1f, tween(1100, easing = FastOutSlowInEasing)) }
+                delay(120)
+                // Carried in from the top edge on the crest.
+                launch { fade.animateTo(1f, tween(380)) }
+                ride.animateTo(0f, spring(dampingRatio = 0.82f, stiffness = 170f))
             }
         }
     }
     val accent = MaterialTheme.colorScheme.primary
+    val tone = when (touch) {
+        is Touch.Got -> touch.look.color.takeIf { it != 0 }?.let { Color(it) } ?: accent
+        else -> me?.look?.color?.takeIf { it != 0 }?.let { Color(it) } ?: accent
+    }
     BoxWithConstraints(modifier) {
-        val h = with(density) { maxHeight.toPx() }
         val shape = RoundedCornerShape(30.dp)
-        // What is shown: theirs coming in, else mine, else an empty phone waiting.
+        // The wave: rings spreading from where the card enters or leaves,
+        // drawn past the poster's edges, as on water.
+        Canvas(Modifier.fillMaxSize()) {
+            val p = wave.value
+            if (p <= 0f || p >= 1f) return@Canvas
+            val up = touch == Touch.Sent
+            val center = Offset(size.width / 2f, if (up) size.height * 1.05f else -size.height * 0.05f)
+            val reach = size.height * 1.5f
+            for (k in 0 until 4) {
+                val r = reach * p - k * size.height * 0.09f
+                if (r <= 0f) continue
+                val a = (1f - p * p) * (1f - k * 0.2f)
+                drawCircle(
+                    Brush.radialGradient(
+                        0f to Color.Transparent,
+                        0.8f to Color.Transparent,
+                        0.93f to tone.copy(alpha = 0.75f * a),
+                        1f to Color.White.copy(alpha = 0.95f * a),
+                        center = center, radius = r
+                    ),
+                    radius = r, center = center
+                )
+            }
+        }
+        // What the wave carries: theirs coming in, else mine, else an empty phone waiting.
         Box(
             Modifier.fillMaxSize().graphicsLayer {
-                translationY = if (touch is Touch.Got) drop.value * h else -lift.value * h * 0.06f
-                scaleX = 1f + lift.value * 0.04f
-                scaleY = 1f + lift.value * 0.04f
-                alpha = if (touch is Touch.Got) (1f + drop.value / 1.2f).coerceIn(0.2f, 1f) else 1f
+                translationY = ride.value * size.height
+                alpha = fade.value
+                val swell = 1f + 0.035f * kotlin.math.sin(wave.value * Math.PI.toFloat())
+                scaleX = swell
+                scaleY = swell
             }.clip(shape)
         ) {
             when {
                 touch is Touch.Got -> Poster(touch.name, null, touch.look, Modifier.fillMaxSize())
                 !receiving && me != null -> Poster(me.display, mePhoto, me.look, Modifier.fillMaxSize())
-                else -> Box(Modifier.fillMaxSize().graphicsLayer { }.clip(shape)) {
+                else -> Box(Modifier.fillMaxSize()) {
                     Canvas(Modifier.fillMaxSize()) {
                         drawRect(Brush.verticalGradient(listOf(accent.copy(alpha = 0.18f), accent.copy(alpha = 0.05f))))
                     }
@@ -287,37 +343,20 @@ private fun Stage(me: Details?, mePhoto: ImageBitmap?, receiving: Boolean, touch
                     )
                 }
             }
-            // The wave of light, running down from the touching edge.
-            Canvas(Modifier.fillMaxSize()) {
-                val p = wave.value
-                if (p > 0f && p < 1f) {
-                    val y = size.height * p
-                    drawRect(
-                        Brush.verticalGradient(
-                            0f to Color.Transparent,
-                            0.5f to Color.White.copy(alpha = 0.75f * (1f - p * 0.6f)),
-                            1f to Color.Transparent,
-                            startY = y - size.height * 0.22f,
-                            endY = y + size.height * 0.06f
-                        )
-                    )
-                }
-            }
             // The light on the top edge: the side that touches the other phone, fading out well before the middle.
             Canvas(Modifier.fillMaxSize()) {
                 val glow = if (touch == Touch.Waiting) breath else 1f
                 val reach = size.height * 0.32f
                 drawRect(
                     Brush.radialGradient(
-                        0f to Color.White.copy(alpha = 0.85f * glow),
-                        0.35f to accent.copy(alpha = 0.32f * glow),
+                        0f to Color.White.copy(alpha = 0.9f * glow),
+                        0.35f to tone.copy(alpha = 0.4f * glow),
                         1f to Color.Transparent,
                         center = Offset(size.width / 2f, 0f),
                         radius = reach
                     ),
                     size = androidx.compose.ui.geometry.Size(size.width, reach)
                 )
-                // A glint running along the edge.
                 val x = size.width * shimmer
                 drawRect(
                     Brush.horizontalGradient(
@@ -344,6 +383,14 @@ object TapDemo {
     /** null: the card went; text: theirs came in. */
     @Synchronized
     fun play(text: String?) = listeners.toList().forEach { it(text) }
+}
+
+/** Android's NFC switch as a panel over the app; its settings page where there is no panel. */
+private fun openNfcPanel(context: Context) {
+    val panel = Intent(Settings.Panel.ACTION_NFC).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    if (runCatching { context.startActivity(panel) }.isFailure) {
+        runCatching { context.startActivity(Intent(Settings.ACTION_NFC_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+    }
 }
 
 private fun Context.findActivity(): Activity? {
