@@ -13,12 +13,24 @@ A contacts app for Android. No account, no tracking, no ads.
   their colour on calls and messages, their calls sent to voicemail.
 - Every field Android keeps, photos framed in a circle, pronouns, the
   account to save in.
-- Your own card, shared as a QR code another phone's camera reads.
+- Your own card, shared as a QR code, or by touching another phone with
+  Contacts; you choose what it gives. QR codes and paper business cards
+  scanned into a new contact, read on the phone.
+- Posters: how a person fills the screen when they call, in Dialer.
+- Keep in touch: a reminder for people you have not called or written to
+  for a while, and numbers you talk with often but never saved.
+- Private contacts: kept only in Contacts, sealed on the phone; your phone
+  and messaging apps still show their name, no other app sees them.
+- Favourites on the home screen as a widget; a person pinned there too.
 - Share a contact as a card, or several at once.
 - Choose several people to share, merge, label, message or delete them
   together; people saved twice found and merged.
 - Labels, with a message or an email to everyone in them.
-- Deleted contacts kept 30 days in an encrypted trash, back in one tap.
+- Deleted contacts kept 30 days in an encrypted trash, back in one tap;
+  changes taken back to an earlier day.
+- Every contact in one encrypted file only your passphrase opens, to
+  bring them to a new phone without any account.
+- Contacts can be locked behind your fingerprint, face or PIN.
 - Contact cards from a file, a message or the SIM card; all your contacts
   saved to a file.
 - When another app adds or opens a contact, Contacts answers and goes
@@ -28,7 +40,8 @@ A contacts app for Android. No account, no tracking, no ads.
 
 Contacts stay in Android's own contacts and in your accounts (Google,
 CardDAV), where your other apps find them. The app connects only to
-GitHub, to check for its own updates.
+GitHub, to check for its own updates and, once on your tap, to fetch the
+data that reads business cards.
 
 Works best with [Dialer](https://github.com/213YaZ786/Dialer) and
 [SMS](https://github.com/213YaZ786/SMS), and with any phone and messaging app.
@@ -36,4 +49,6 @@ Works best with [Dialer](https://github.com/213YaZ786/Dialer) and
 ## Licence
 
 MIT. Phone numbers: libphonenumber (Apache 2.0). QR codes: ZXing
-(Apache 2.0). Icons: Material Icons (Apache 2.0).
+(Apache 2.0). Camera: CameraX (Apache 2.0). Text reading: Tesseract and
+Tesseract4Android (Apache 2.0). Encryption: Bouncy Castle (MIT). Icons:
+Material Icons (Apache 2.0).
