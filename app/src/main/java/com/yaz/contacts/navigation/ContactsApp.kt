@@ -133,6 +133,7 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                 onOpen = { nav.navigate(Routes.contact(it)) },
                 onMakeMe = { nav.navigate(Routes.edit(me = true)) },
                 onEdit = { nav.navigate(Routes.edit(it)) },
+                onScan = { nav.navigate(Routes.SCAN) },
                 onOpenSettings = { nav.navigate(Routes.SETTINGS) },
                 onOpenTidy = { nav.navigate(Routes.TIDY) },
                 onAdd = { nav.navigate(Routes.edit()) }
@@ -146,6 +147,7 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                     onBack = ::back,
                     onEdit = { nav.navigate(Routes.edit(it)) },
                     onDeleted = ::back,
+                    onScan = { nav.navigate(Routes.SCAN) },
                     onMoved = { moved ->
                         nav.popBackStack()
                         nav.navigate(Routes.contact(moved))
@@ -233,11 +235,18 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                     onOpen = { nav.navigate(Routes.contact(it)) },
                     onTrash = { nav.navigate(Routes.TRASH) },
                     onUndo = { nav.navigate(Routes.UNDO) },
+                    onScan = { nav.navigate(Routes.SCAN) },
                     onLabel = { nav.navigate(Routes.label(it)) },
                     onImport = { nav.navigate(Routes.import(it)) },
                     onImportText = { text -> nav.navigate("import?uri=" + Uri.encode("text:" + drafts.put(text))) }
                 )
             }
+        }
+        composable(Routes.SCAN) {
+            com.yaz.contacts.feature.scan.ScanScreen(onBack = ::back, onCard = { text ->
+                nav.popBackStack()
+                nav.navigate("import?uri=" + Uri.encode("text:" + drafts.put(text)))
+            })
         }
         composable(Routes.UNDO) { ReadableScroll { com.yaz.contacts.feature.tidy.UndoScreen(onBack = ::back) } }
         composable(Routes.TRASH) { ReadableScroll { TrashScreen(onBack = ::back, onRestored = { }) } }
@@ -253,7 +262,7 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
 
 /** The list, the way to a new contact floating over it, the first launch page until closed. */
 @Composable
-private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) -> Unit, onOpenSettings: () -> Unit, onOpenTidy: () -> Unit, onAdd: () -> Unit) {
+private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) -> Unit, onScan: () -> Unit, onOpenSettings: () -> Unit, onOpenTidy: () -> Unit, onAdd: () -> Unit) {
     val store: SettingsStore = koinInject()
     var showWelcome by rememberSaveable { mutableStateOf(!store.current.welcomeSeen) }
     val settings by store.settings.collectAsState()
@@ -279,7 +288,7 @@ private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) ->
                             message = "Their page opens here.",
                             icon = AppIcons.Person,
                             modifier = Modifier.fillMaxSize()
-                        ) else ContactScreen(id = id, onBack = { picked = null }, onEdit = onEdit, onDeleted = { picked = null }, onMoved = { picked = it })
+                        ) else ContactScreen(id = id, onBack = { picked = null }, onEdit = onEdit, onDeleted = { picked = null }, onMoved = { picked = it }, onScan = onScan)
                     }
                 }
             }

@@ -14,6 +14,7 @@ object Routes {
     const val TIDY = "tidy"
     const val LABEL = "label/{id}"
     const val UNDO = "undo"
+    const val SCAN = "scan"
 
     fun contact(id: Long) = "contact/$id"
 

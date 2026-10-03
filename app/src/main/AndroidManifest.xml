@@ -14,6 +14,9 @@
     <!-- Call calls at once, as in the phone app; without it the phone app opens with the number ready. -->
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
+    <!-- Reads another phone's contact QR code; asked the first time, the picture never leaves the phone. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <!-- Lets the user feel a person's vibration while choosing it. -->
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Hides other apps' floating windows over the editor and the delete

@@ -97,7 +97,7 @@ import org.koin.compose.koinInject
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDeleted: () -> Unit, onMoved: (Long) -> Unit = { onDeleted() }) {
+fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDeleted: () -> Unit, onMoved: (Long) -> Unit = { onDeleted() }, onScan: () -> Unit = {}) {
     val store: ContactStore = koinInject()
     val writer: ContactWriter = koinInject()
     val trash: Trash = koinInject()
@@ -170,7 +170,7 @@ fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDelete
                     Spacer(Modifier.height(padding.calculateTopPadding() + 8.dp))
                     Header(d)
                     Spacer(Modifier.height(20.dp))
-                    Actions(d, onQr = { showQr = true })
+                    Actions(d, onQr = { showQr = true }, onScan = onScan)
                     Spacer(Modifier.height(16.dp))
                     Fields(d)
                     if (!android.provider.ContactsContract.isProfileId(d.id)) OnThisPhone(
@@ -289,12 +289,14 @@ private fun Header(d: Details) {
 /** The ways to reach them, each a round pane of glass, wrapping onto a second line on a narrow screen. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Actions(d: Details, onQr: () -> Unit) {
+private fun Actions(d: Details, onQr: () -> Unit, onScan: () -> Unit) {
     // The user's own card: only sharing it makes sense.
     if (android.provider.ContactsContract.isProfileId(d.id)) {
         val context = LocalContext.current
         EvenRows(minSlot = 64.dp, modifier = Modifier.widthIn(max = 640.dp)) {
-            ActionTile(AppIcons.QrCode, "QR code", accent = true) { onQr() }
+            // Show mine, scan theirs: two phones swap cards face to face.
+            ActionTile(AppIcons.QrCode, "My QR code", accent = true) { onQr() }
+            ActionTile(AppIcons.PhotoCamera, "Scan theirs") { onScan() }
             ActionTile(AppIcons.Share, "Share") { Reach.share(context, listOf(d.lookup), d.display) }
         }
         return

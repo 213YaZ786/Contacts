@@ -64,7 +64,7 @@ import org.koin.compose.koinInject
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun TidyScreen(onBack: () -> Unit, onOpen: (Long) -> Unit, onTrash: () -> Unit, onUndo: () -> Unit, onLabel: (Long) -> Unit, onImport: (Uri) -> Unit, onImportText: (String) -> Unit) {
+fun TidyScreen(onBack: () -> Unit, onOpen: (Long) -> Unit, onTrash: () -> Unit, onUndo: () -> Unit, onScan: () -> Unit, onLabel: (Long) -> Unit, onImport: (Uri) -> Unit, onImportText: (String) -> Unit) {
     val store: ContactStore = koinInject()
     val writer: ContactWriter = koinInject()
     val trash: Trash = koinInject()
@@ -148,6 +148,7 @@ fun TidyScreen(onBack: () -> Unit, onOpen: (Long) -> Unit, onTrash: () -> Unit, 
                 InfoRow(AppIcons.Add, "New label", null, onClick = { naming = true })
             }
             InfoZone("In and out") {
+                InfoRow(AppIcons.PhotoCamera, "Scan a contact's QR code", "From another phone or a printed card", onClick = onScan)
                 InfoRow(AppIcons.Download, "Import from a file", "Contact cards (.vcf)", onClick = { importer.launch(arrayOf("text/x-vcard", "text/vcard", "text/directory", "text/plain", "application/octet-stream")) })
                 InfoRow(AppIcons.Upload, "Export to a file", "All ${all.orEmpty().size} contacts as cards (.vcf)", onClick = { exporter.launch("contacts.vcf") })
                 InfoRow(AppIcons.SimCard, "Import from the SIM card", null, onClick = {
