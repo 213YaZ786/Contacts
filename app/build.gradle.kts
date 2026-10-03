@@ -6,17 +6,17 @@ plugins {
 }
 
 android {
-    namespace = "com.contact.app"
+    namespace = "com.yaz.contacts"
     // 37 because Compose compiles against it, and the app follows the
     // newest platform rules for contacts, notifications and permissions.
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.contact.app"
+        applicationId = "com.yaz.contacts"
         minSdk = 31
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
     }
 
     signingConfigs {
@@ -59,6 +59,8 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        // The picture decoder in its isolated process is reached through Binder.
+        aidl = true
     }
 
     packaging {
@@ -92,7 +94,7 @@ dependencies {
     // found under two spellings, offline: Google's libphonenumber (Apache-2.0).
     implementation("com.googlecode.libphonenumber:libphonenumber:9.0.40")
     // A contact as a QR code, and a QR code read back into a contact: ZXing's core (Apache-2.0).
-    implementation("com.google.zxing:core:3.5.3")
+    implementation("com.google.zxing:core:3.5.4")
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)

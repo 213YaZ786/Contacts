@@ -1,9 +1,9 @@
 # kotlinx.serialization
 -keepattributes *Annotation*, InnerClasses
 -dontnote kotlinx.serialization.**
--keepclassmembers class com.contact.app.** {
+-keepclassmembers class com.yaz.contacts.** {
     *** Companion;
 }
--keepclasseswithmembers class com.contact.app.** {
+-keepclasseswithmembers class com.yaz.contacts.** {
     kotlinx.serialization.KSerializer serializer(...);
 }

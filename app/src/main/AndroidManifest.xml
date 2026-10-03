@@ -19,6 +19,8 @@
     <!-- Hides other apps' floating windows over the editor and the delete
          question, so nothing can lay a false button over Save or Delete. Granted at install. -->
     <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />
+    <!-- Knows when Android's Advanced Protection is on, to keep contacts out of screenshots then. -->
+    <uses-permission android:name="android.permission.QUERY_ADVANCED_PROTECTION_MODE" />
 
     <!-- The apps a contact hands off to: the phone app calls, the messaging
          app writes, Dialer shows the calls with a number, mail and maps. -->
@@ -39,6 +41,11 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="geo" />
         </intent>
+        <!-- What other apps keep in a contact (a chat, a call), opened in them. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="vnd.android.cursor.item/*" />
+        </intent>
         <intent>
             <action android:name="com.dialer.app.action.SHOW_NUMBER" />
             <data android:scheme="tel" />
@@ -57,7 +64,8 @@
         android:theme="@style/Theme.Contacts"
         android:enableOnBackInvokedCallback="false"
         android:usesCleartextTraffic="false"
-        android:networkSecurityConfig="@xml/network_security_config">
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:memtagMode="sync">
 
         <activity
             android:name=".MainActivity"
@@ -159,6 +167,14 @@
                 <data android:scheme="mailto" />
             </intent-filter>
         </activity>
+
+        <!-- Pictures from outside are decoded here, in a process of its own
+             with no permission, no files and no network. -->
+        <service
+            android:name=".core.security.DecoderService"
+            android:exported="false"
+            android:isolatedProcess="true"
+            android:process=":decoder" />
 
         <!-- After an update the app installed itself: a notification to open it again. -->
         <receiver
