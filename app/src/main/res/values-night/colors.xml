@@ -1,5 +1,5 @@
 <resources>
-    <!-- By night the ground is a deep neutral and the card a light accent. -->
+    <!-- By night the ground is a deep neutral, the shortcuts' glyph a light accent. -->
     <color name="ic_launcher_background">@android:color/system_neutral1_800</color>
     <color name="ic_launcher_glyph">@android:color/system_accent1_200</color>
     <color name="widget_ground">@android:color/system_neutral1_800</color>

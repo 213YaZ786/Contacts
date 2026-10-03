@@ -1,7 +1,9 @@
 <resources>
     <!-- The launcher icon follows the wallpaper: the palest tone of the
-         accent by day, a deep neutral by night, the card in the accent. -->
+         accent by day, a deep neutral by night, the disc in the accent (as
+         Dialer's). The glyph colour is the icon shortcuts'. -->
     <color name="ic_launcher_background">@android:color/system_accent1_50</color>
+    <color name="ic_launcher_disc">@android:color/system_accent1_500</color>
     <color name="ic_launcher_glyph">@android:color/system_accent1_600</color>
     <color name="widget_ground">@android:color/system_accent1_50</color>
     <color name="widget_ink">@android:color/system_neutral1_900</color>
