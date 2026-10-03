@@ -38,6 +38,11 @@ internal enum class SetupStep(val title: String, val message: String, val action
         "Allow contacts",
         "To show, add and change the people on this phone. They stay on the phone and in your accounts.",
         "Allow"
+    ),
+    NOTIFICATIONS(
+        "Allow notifications",
+        "To see a new version download, then restart it with a tap.",
+        "Allow"
     )
 }
 
@@ -66,6 +71,7 @@ internal fun rememberSetup(): Setup {
     return Setup(step) { wanted ->
         when (wanted) {
             SetupStep.CONTACTS -> ask.launch(arrayOf(Manifest.permission.READ_CONTACTS, Manifest.permission.WRITE_CONTACTS))
+            SetupStep.NOTIFICATIONS -> ask.launch(arrayOf(Manifest.permission.POST_NOTIFICATIONS))
         }
     }
 }
@@ -97,7 +103,10 @@ fun SetupZone(modifier: Modifier = Modifier) {
 private fun nextStep(context: Context): SetupStep? {
     val read = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
     val write = ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CONTACTS) == PackageManager.PERMISSION_GRANTED
-    return if (read && write) null else SetupStep.CONTACTS
+    if (!read || !write) return SetupStep.CONTACTS
+    // Without it the updates download and wait unseen.
+    if (!context.getSystemService(android.app.NotificationManager::class.java).areNotificationsEnabled()) return SetupStep.NOTIFICATIONS
+    return null
 }
 
 private fun openAppSettings(context: Context) {

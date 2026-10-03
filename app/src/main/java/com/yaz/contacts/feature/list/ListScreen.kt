@@ -102,14 +102,18 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
     }
 
     var query by rememberSaveable { mutableStateOf("") }
-    var filterKey by rememberSaveable { mutableStateOf("all") }
-    val filter: Filter = when {
-        filterKey == "fav" -> Filter.Favorites
-        filterKey == "recent" -> Filter.Recent
-        filterKey == "private" -> Filter.Private
-        filterKey.startsWith("label/") -> filterKey.removePrefix("label/").toLongOrNull()?.let { Filter.Label(it) } ?: Filter.All
-        else -> Filter.All
+    // Recent on the left, everyone in the middle (opened first), favourites
+    // on the right, swiped as Dialer's tabs; private ones and a label are
+    // views of their own, reached from the title.
+    val pager = androidx.compose.foundation.pager.rememberPagerState(initialPage = 1) { 3 }
+    var special by rememberSaveable { mutableStateOf("") }
+    val specialFilter: Filter? = when {
+        special == "private" -> Filter.Private
+        special.startsWith("label/") -> special.removePrefix("label/").toLongOrNull()?.let { Filter.Label(it) }
+        else -> null
     }
+    fun pageFilter(page: Int): Filter = when (page) { 0 -> Filter.Recent; 2 -> Filter.Favorites; else -> Filter.All }
+    val filter: Filter = specialFilter ?: pageFilter(pager.currentPage)
     val order = settings.sortOrder
     val people = remember(all, order, settings.shownAccounts, settings.onlyWithNumbers) {
         val list = all.orEmpty().let { list ->
@@ -117,17 +121,32 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
         }.let { list -> if (settings.onlyWithNumbers) list.filter { it.phones.isNotEmpty() } else list }
         Contacts.sorted(list, order)
     }
-    val filtered = remember(people, filter) {
-        when (filter) {
+    // When the user last called or wrote each person, from Dialer and SMS (never kept here).
+    val context0 = LocalContext.current
+    val lastTalk by androidx.compose.runtime.produceState<Map<Long, Long>>(emptyMap(), people) {
+        val pairs = people.flatMap { c -> c.phones.map { c.id to it } }
+        val out = HashMap<Long, Long>()
+        pairs.chunked(500).forEach { chunk ->
+            val at = com.yaz.contacts.core.handoff.Talks.last(context0, chunk.map { it.second }) ?: return@forEach
+            chunk.forEachIndexed { i, (id, _) -> if (at[i] > (out[id] ?: 0L)) out[id] = at[i] }
+        }
+        value = out
+    }
+    fun listFor(f: Filter): List<Contact> {
+        val filtered = when (f) {
             Filter.All -> people
             Filter.Favorites -> people.filter { it.starred }
-            // Changed in the last 30 days, newest first.
-            Filter.Recent -> people.filter { it.updated > System.currentTimeMillis() - 30L * 24 * 3600 * 1000 }.sortedByDescending { it.updated }
-            is Filter.Label -> people.filter { filter.id in it.groups }
+            // Talked with or added lately, the latest first.
+            Filter.Recent -> {
+                val since = System.currentTimeMillis() - 30L * 24 * 3600 * 1000
+                people.filter { maxOf(lastTalk[it.id] ?: 0L, it.updated) > since }.sortedByDescending { maxOf(lastTalk[it.id] ?: 0L, it.updated) }
+            }
+            is Filter.Label -> people.filter { f.id in it.groups }
             Filter.Private -> emptyList()
         }
+        return Contacts.search(filtered, query)
     }
-    val shown = remember(filtered, query) { Contacts.search(filtered, query) }
+    val shown = remember(people, filter, query, lastTalk) { listFor(filter) }
     val favorites = remember(people) { people.filter { it.starred } }
     val usedLabels = remember(groups, people) { groups.filter { g -> people.any { g.id in it.groups } } }
 
@@ -149,7 +168,11 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
     }
     androidx.activity.compose.BackHandler(enabled = selecting) { selectedIds = emptyList() }
     var labelling by remember { mutableStateOf(false) }
-    var choosingLabel by remember { mutableStateOf(false) }
+    var choosingView by remember { mutableStateOf(false) }
+    // Back from a view of its own to the tabs, then from a side tab to everyone.
+    androidx.activity.compose.BackHandler(enabled = !selecting && (specialFilter != null || pager.currentPage != 1)) {
+        if (specialFilter != null) special = "" else scope.launch { pager.animateScrollToPage(1) }
+    }
     val writer: ContactWriter = koinInject()
     val context = LocalContext.current
     val haptics = rememberHaptics()
@@ -163,34 +186,29 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
                 Filter.Private -> "Private"
                 is Filter.Label -> groups.firstOrNull { it.id == filter.id }?.title ?: "Contacts"
             },
+            // The title opens the other views (private people, labels) when there are any.
+            onTitle = if (hidden.isNotEmpty() || usedLabels.isNotEmpty() || specialFilter != null) ({ choosingView = true }) else null,
             onOpenSettings = onOpenSettings,
             onOpenTidy = onOpenTidy,
-            // In glass over the list, as Dialer's tabs.
+            // In glass over the list, as Dialer's tabs: recent, everyone, favourites.
             overlay = {
-            // The sections in a floating pill at the bottom, as Dialer's tabs:
-            // everyone, favourites, recent, private, labels.
-            if (canRead && people.isNotEmpty() && !selecting) {
-                val sections = buildList {
-                    add(Triple("all", com.yaz.contacts.ui.component.DockItem(AppIcons.Contacts, "All"), filter == Filter.All))
-                    if (favorites.isNotEmpty() || filter == Filter.Favorites) add(Triple("fav", com.yaz.contacts.ui.component.DockItem(AppIcons.Star, "Favorites"), filter == Filter.Favorites))
-                    add(Triple("recent", com.yaz.contacts.ui.component.DockItem(AppIcons.History, "Recent"), filter == Filter.Recent))
-                    if (hidden.isNotEmpty() || filter == Filter.Private) add(Triple("private", com.yaz.contacts.ui.component.DockItem(AppIcons.Lock, "Private"), filter == Filter.Private))
-                    if (usedLabels.isNotEmpty()) add(Triple("labels", com.yaz.contacts.ui.component.DockItem(AppIcons.Label, "Labels"), filter is Filter.Label))
+                if (canRead && people.isNotEmpty() && !selecting) {
+                    val position = if (specialFilter != null) -1f else pager.currentPage + pager.currentPageOffsetFraction
+                    com.yaz.contacts.ui.component.FloatingDock(
+                        items = listOf(
+                            com.yaz.contacts.ui.component.DockItem(AppIcons.History, "Recent"),
+                            com.yaz.contacts.ui.component.DockItem(AppIcons.Contacts, "All"),
+                            com.yaz.contacts.ui.component.DockItem(AppIcons.Star, "Favorites")
+                        ),
+                        position = position,
+                        onSelect = { i ->
+                            if (i != pager.currentPage || specialFilter != null) haptics.firm()
+                            special = ""
+                            scope.launch { pager.animateScrollToPage(i) }
+                        },
+                        modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.navigationBars).padding(bottom = 16.dp)
+                    )
                 }
-                val at by androidx.compose.animation.core.animateFloatAsState(
-                    sections.indexOfFirst { it.third }.coerceAtLeast(0).toFloat(),
-                    androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 500f), label = "section"
-                )
-                com.yaz.contacts.ui.component.FloatingDock(
-                    items = sections.map { it.second },
-                    position = at,
-                    onSelect = { i ->
-                        val key = sections[i].first
-                        if (key == "labels") choosingLabel = true else filterKey = key
-                    },
-                    modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.navigationBars).padding(bottom = 16.dp)
-                )
-            }
             },
             controls = {
                 if (selecting) {
@@ -230,64 +248,93 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
                 }
             }
         ) { padding ->
-            when {
-                !canRead -> EmptyZone(
-                    title = "Your contacts show here",
-                    message = "Allow contacts above to see them.",
-                    icon = AppIcons.Contacts,
-                    modifier = Modifier.fillMaxSize().padding(padding)
-                )
-                filter == Filter.Private -> PrivateList(hidden, query, padding, onOpenPrivate)
-                all == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { LoadingMark(size = 72.dp) }
-                people.isEmpty() -> EmptyZone(
-                    title = "No contacts yet",
-                    message = "Add someone with the round button, or bring a file of contacts in from Tidy up.",
-                    icon = AppIcons.PersonAdd,
-                    modifier = Modifier.fillMaxSize().padding(padding)
-                )
-                shown.isEmpty() -> EmptyZone(
-                    title = "No one found",
-                    message = if (query.isNotBlank()) "No name, number or email matches \"$query\"." else "No one here yet.",
-                    icon = AppIcons.Search,
-                    modifier = Modifier.fillMaxSize().padding(padding)
-                )
-                else -> PeopleList(
-                    shown = shown,
-                    favorites = if (query.isBlank() && filter == Filter.All) favorites else emptyList(),
-                    birthdays = if (query.isBlank() && filter == Filter.All) Contacts.birthdays(people, java.time.LocalDate.now()) else emptyList(),
-                    grouped = filter != Filter.Recent,
-                    lastFirst = settings.lastNameFirst,
-                    me = if (query.isBlank() && filter == Filter.All && !selecting) (me ?: NO_CARD) else null,
-                    onMe = { me?.let { onOpen(it.id) } ?: onMakeMe() },
-                    order = order,
-                    padding = padding,
-                    onOpen = { id -> if (selecting) toggle(id) else onOpen(id) },
-                    onDelete = { deleting = listOf(it) },
-                    selected = selected,
-                    onSelect = { id ->
-                        haptics.firm()
-                        toggle(id)
-                    }
-                )
+            @Composable
+            fun Page(f: Filter) {
+                val list = remember(people, f, query, lastTalk) { listFor(f) }
+                when {
+                    !canRead -> EmptyZone(
+                        title = "Your contacts show here",
+                        message = "Allow contacts above to see them.",
+                        icon = AppIcons.Contacts,
+                        modifier = Modifier.fillMaxSize().padding(padding)
+                    )
+                    f == Filter.Private -> PrivateList(hidden, query, padding, onOpenPrivate)
+                    all == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { LoadingMark(size = 72.dp) }
+                    people.isEmpty() -> EmptyZone(
+                        title = "No contacts yet",
+                        message = "Add someone with the round button, or bring a file of contacts in from Tidy up.",
+                        icon = AppIcons.PersonAdd,
+                        modifier = Modifier.fillMaxSize().padding(padding)
+                    )
+                    list.isEmpty() -> EmptyZone(
+                        title = if (query.isNotBlank()) "No one found" else when (f) {
+                            Filter.Recent -> "No one lately"
+                            Filter.Favorites -> "No favorites yet"
+                            else -> "No one here yet"
+                        },
+                        message = when {
+                            query.isNotBlank() -> "No name, number or email matches \"$query\"."
+                            f == Filter.Recent -> "People you call, write to or add show here for a month."
+                            f == Filter.Favorites -> "Star someone on their page or with a long press."
+                            else -> "No one here yet."
+                        },
+                        icon = if (f == Filter.Favorites) AppIcons.Star else AppIcons.Search,
+                        modifier = Modifier.fillMaxSize().padding(padding)
+                    )
+                    else -> PeopleList(
+                        shown = list,
+                        favorites = if (query.isBlank() && f == Filter.All) favorites else emptyList(),
+                        birthdays = if (query.isBlank() && f == Filter.All) Contacts.birthdays(people, java.time.LocalDate.now()) else emptyList(),
+                        grouped = f != Filter.Recent,
+                        lastFirst = settings.lastNameFirst,
+                        me = if (query.isBlank() && f == Filter.All && !selecting) (me ?: NO_CARD) else null,
+                        onMe = { me?.let { onOpen(it.id) } ?: onMakeMe() },
+                        order = order,
+                        padding = padding,
+                        onOpen = { id -> if (selecting) toggle(id) else onOpen(id) },
+                        onDelete = { deleting = listOf(it) },
+                        selected = selected,
+                        onSelect = { id ->
+                            haptics.firm()
+                            toggle(id)
+                        }
+                    )
+                }
             }
+            val shownSpecial = specialFilter
+            if (shownSpecial != null) Page(shownSpecial)
+            else androidx.compose.foundation.pager.HorizontalPager(
+                state = pager,
+                // The three stay alive, so a swipe never reloads or loses the scroll.
+                beyondViewportPageCount = 2,
+                modifier = Modifier.fillMaxSize()
+            ) { page -> Page(pageFilter(page)) }
         }
     }
 
-    if (choosingLabel) com.yaz.contacts.ui.component.ZoneAlertDialog(
-        onDismissRequest = { choosingLabel = false },
-        icon = { androidx.compose.material3.Icon(AppIcons.Label, null) },
-        title = { Text("Labels") },
+    if (choosingView) com.yaz.contacts.ui.component.ZoneAlertDialog(
+        onDismissRequest = { choosingView = false },
+        icon = { androidx.compose.material3.Icon(AppIcons.Contacts, null) },
+        title = { Text("Show") },
         text = {
             EvenRows(minSlot = 120.dp) {
+                TextControl("Everyone", specialFilter == null) {
+                    special = ""
+                    choosingView = false
+                }
+                if (hidden.isNotEmpty()) TextControl("Private", specialFilter == Filter.Private) {
+                    special = "private"
+                    choosingView = false
+                }
                 usedLabels.forEach { g ->
-                    TextControl(g.title, (filter as? Filter.Label)?.id == g.id) {
-                        filterKey = "label/${g.id}"
-                        choosingLabel = false
+                    TextControl(g.title, (specialFilter as? Filter.Label)?.id == g.id) {
+                        special = "label/${g.id}"
+                        choosingView = false
                     }
                 }
             }
         },
-        confirmButton = { androidx.compose.material3.TextButton(onClick = { choosingLabel = false }) { Text("Close") } }
+        confirmButton = { androidx.compose.material3.TextButton(onClick = { choosingView = false }) { Text("Close") } }
     )
     if (deleting.isNotEmpty()) {
         val those = deleting
@@ -363,8 +410,8 @@ private fun PeopleList(
     selected: Set<Long>,
     onSelect: (Long) -> Unit
 ) {
-    // Recent ones keep their order, newest first, under one heading.
-    val groups = remember(shown, order, grouped) { if (grouped) shown.groupBy { Contacts.bucketOf(it, order) } else mapOf("Changed lately" to shown) }
+    // Recent ones keep their order, latest first, under one heading.
+    val groups = remember(shown, order, grouped) { if (grouped) shown.groupBy { Contacts.bucketOf(it, order) } else mapOf("Talked with or added lately" to shown) }
     val rail = grouped && shown.size >= RAIL_FROM
     val list = rememberLazyListState()
     val scope = rememberCoroutineScope()

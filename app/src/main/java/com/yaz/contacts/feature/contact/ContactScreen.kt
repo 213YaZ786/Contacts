@@ -311,10 +311,16 @@ private fun Header(d: Details) {
         ContactAvatar(d.display, d.photo ?: d.thumbnail, 132.dp, look = d.look.forAvatar())
     }
     Spacer(Modifier.height(14.dp))
-    Text(d.display.ifBlank { "No name" }, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
     val phonetic = listOf(d.name.phoneticGiven, d.name.phoneticMiddle, d.name.phoneticFamily).filter { it.isNotBlank() }.joinToString(" ")
-    // How their name is said: as written to be heard (phonetic), else as written, by the phone's own voice.
-    SayName(phonetic.ifBlank { d.display }, phonetic)
+    // The name with the way to hear it beside it, on one line; the same room
+    // on the other side keeps the name centred.
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth()) {
+        Spacer(Modifier.size(48.dp))
+        Text(d.display.ifBlank { "No name" }, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
+        // How their name is said: as written to be heard (phonetic), else as written, by the phone's own voice.
+        SayName(phonetic.ifBlank { d.display })
+    }
+    if (phonetic.isNotBlank()) Text(phonetic, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     val also = listOfNotNull(d.nickname?.value?.let { "“$it”" }, d.look.pronouns.takeIf { it.isNotBlank() }).joinToString(" · ")
     if (also.isNotBlank()) Text(also, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
     val work = listOf(d.organization.title, d.organization.department, d.organization.company).filter { it.isNotBlank() }.joinToString(" · ")
@@ -385,26 +391,29 @@ private fun SharedCard(d: Details) {
 }
 
 @Composable
-private fun SayName(spoken: String, phonetic: String) {
+private fun SayName(spoken: String) {
     val context = LocalContext.current
     val haptics = rememberHaptics()
     var voice by remember { mutableStateOf<android.speech.tts.TextToSpeech?>(null) }
     DisposableEffect(Unit) { onDispose { voice?.shutdown() } }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        if (phonetic.isNotBlank()) Text(phonetic, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        IconButton(onClick = {
-            haptics.tick()
-            val ready = voice
-            if (ready != null) ready.speak(spoken, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "name")
-            else {
-                var made: android.speech.tts.TextToSpeech? = null
-                made = android.speech.tts.TextToSpeech(context.applicationContext) { status ->
-                    if (status == android.speech.tts.TextToSpeech.SUCCESS) made?.speak(spoken, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "name")
+    IconButton(onClick = {
+        haptics.tick()
+        val ready = voice
+        if (ready != null) ready.speak(spoken, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "name")
+        else {
+            var made: android.speech.tts.TextToSpeech? = null
+            made = android.speech.tts.TextToSpeech(context.applicationContext) { status ->
+                if (status == android.speech.tts.TextToSpeech.SUCCESS) made?.speak(spoken, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "name")
+                else {
+                    // No voice on this phone: said, and Android's page to add one.
+                    voice = null
+                    android.widget.Toast.makeText(context, "This phone has no voice to read names: add one in Android's settings.", android.widget.Toast.LENGTH_LONG).show()
+                    runCatching { context.startActivity(android.content.Intent("com.android.settings.TTS_SETTINGS").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
                 }
-                voice = made
             }
-        }) { Icon(AppIcons.VolumeUp, "Say their name", tint = MaterialTheme.colorScheme.primary) }
-    }
+            voice = made
+        }
+    }) { Icon(AppIcons.VolumeUp, "Say their name", tint = MaterialTheme.colorScheme.primary) }
 }
 
 /** What the user's own card gives when shared: each number, email, website and their work, ticked on or off. */
