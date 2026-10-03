@@ -56,6 +56,10 @@
     <!-- The apps a contact hands off to: the phone app calls, the messaging
          app writes, Dialer shows the calls with a number, mail and maps. -->
     <queries>
+        <!-- The phone's voice, to say a contact's name (Android 11+ hides it otherwise). -->
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
         <intent>
             <action android:name="android.intent.action.DIAL" />
             <data android:scheme="tel" />
