@@ -119,6 +119,7 @@ fun ImportScreen(source: Uri?, text: String? = null, onClose: () -> Unit, onDone
                         subtitle = card.details.phones.firstOrNull()?.value?.let { Numbers.format(context, it) } ?: card.details.emails.firstOrNull()?.value ?: card.details.organization.company.ifBlank { null },
                         starred = false,
                         selected = i in chosen,
+                        look = card.details.look.takeIf { !it.isDefault },
                         onOpen = {
                             haptics.toggle(i !in chosen)
                             chosen = if (i in chosen) chosen - i else chosen + i

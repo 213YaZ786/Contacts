@@ -362,7 +362,7 @@ private fun Actions(d: Details, onQr: () -> Unit, onScan: () -> Unit, onTap: () 
         val context = LocalContext.current
         EvenRows(minSlot = 64.dp, modifier = Modifier.widthIn(max = 640.dp)) {
             // Touch phones, show mine, scan theirs: two phones swap cards face to face.
-            if (context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_NFC_HOST_CARD_EMULATION)) ActionTile(AppIcons.Nfc, "Touch phones", accent = true) { onTap() }
+            if (com.yaz.contacts.BuildConfig.DEBUG || context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_NFC_HOST_CARD_EMULATION)) ActionTile(AppIcons.Nfc, "Touch phones", accent = true) { onTap() }
             ActionTile(AppIcons.QrCode, "My QR code") { onQr() }
             ActionTile(AppIcons.PhotoCamera, "Scan theirs") { onScan() }
             ActionTile(AppIcons.Share, "Share") { Reach.share(context, listOf(d.lookup), d.display) }

@@ -12,6 +12,11 @@ import com.yaz.contacts.data.contacts.Offers
  */
 class DebugOfferReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        // --es tap sent : the card went to the other phone; --es tap "<vCard>" : theirs came in.
+        intent.getStringExtra("tap")?.let { tap ->
+            com.yaz.contacts.feature.nfc.TapDemo.play(if (tap == "sent") null else tap.replace("\\n", "\r\n"))
+            return
+        }
         val number = intent.getStringExtra("number") ?: return
         intent.getStringExtra("card")?.let { Offers.get(context).offer(number, it.replace("\\n", "\r\n"), null) }
         intent.getStringExtra("verified")?.let { Offers.get(context).setVerified(number, it.toBoolean()) }

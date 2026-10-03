@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
@@ -267,11 +268,21 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
         composable(Routes.TAP, arguments = listOf(navArgument("give") { type = NavType.BoolType; defaultValue = true })) { entry ->
             val give = entry.arguments?.getBoolean("give") != false
             val store: com.yaz.contacts.data.contacts.ContactStore = koinInject()
-            // The user's own card as it goes to the other phone, read once.
-            val card by androidx.compose.runtime.produceState<String?>(null) {
-                if (give) value = store.me()?.let { store.details(it.id) }?.let { com.yaz.contacts.core.vcard.VCard.short(it, look = true) }
+            // The user's own card as it goes to the other phone, and their poster, read once.
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val me by androidx.compose.runtime.produceState<com.yaz.contacts.core.contacts.Details?>(null) {
+                if (give) value = store.me()?.let { store.details(it.id) }
             }
-            com.yaz.contacts.feature.nfc.TapScreen(card = card, onBack = ::back, onCard = { text ->
+            val mePhoto by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, me) {
+                val d = me ?: return@produceState
+                value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    runCatching {
+                        android.provider.ContactsContract.Contacts.openContactPhotoInputStream(context.contentResolver, android.provider.ContactsContract.Profile.CONTENT_URI, true)?.use { it.readBytes() }
+                    }.getOrNull()?.let { com.yaz.contacts.core.security.SafeImages.decode(context, it, 1440) }
+                }?.asImageBitmap()
+            }
+            val card = me?.let { com.yaz.contacts.core.vcard.VCard.short(it, look = true) }
+            com.yaz.contacts.feature.nfc.TapScreen(give = give, me = me, mePhoto = mePhoto, card = card, onBack = ::back, onCard = { text ->
                 nav.popBackStack()
                 nav.navigate("import?uri=" + Uri.encode("text:" + drafts.put(text)))
             })
