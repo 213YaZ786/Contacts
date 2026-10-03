@@ -189,6 +189,7 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                     contactId = id,
                     prefill = prefill,
                     me = me,
+                    onCard = { nav.navigate(Routes.CARD) },
                     onClose = ::back,
                     onSaved = { saved ->
                         if (finish != null) {
@@ -264,6 +265,7 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                     onUndo = { nav.navigate(Routes.UNDO) },
                     onScan = { nav.navigate(Routes.SCAN) },
                     onTap = { nav.navigate(Routes.tap(false)) },
+                    onCard = { nav.navigate(Routes.CARD) },
                     onLabel = { nav.navigate(Routes.label(it)) },
                     onImport = { nav.navigate(Routes.import(it)) },
                     onImportText = { text -> nav.navigate("import?uri=" + Uri.encode("text:" + drafts.put(text))) }
@@ -299,6 +301,12 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
             com.yaz.contacts.feature.nfc.TapScreen(give = give, me = me, mePhoto = mePhoto, card = card, onBack = ::back, onCard = { text ->
                 nav.popBackStack()
                 nav.navigate("import?uri=" + Uri.encode("text:" + drafts.put(text)) + "&person=true")
+            })
+        }
+        composable(Routes.CARD) {
+            com.yaz.contacts.feature.scan.CardScanScreen(onBack = ::back, onDetails = { details ->
+                nav.popBackStack()
+                nav.navigate(Routes.edit(null, drafts.put(details)))
             })
         }
         composable(Routes.SCAN) {

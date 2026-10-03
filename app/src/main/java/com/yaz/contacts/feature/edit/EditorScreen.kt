@@ -105,7 +105,7 @@ import org.koin.compose.koinInject
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSaved: (ContactWriter.Saved) -> Unit, me: Boolean = false) {
+fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSaved: (ContactWriter.Saved) -> Unit, me: Boolean = false, onCard: () -> Unit = {}) {
     val store: ContactStore = koinInject()
     val writer: ContactWriter = koinInject()
     val settingsStore: SettingsStore = koinInject()
@@ -227,6 +227,12 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
                 }
             }
 
+            // A new contact from a paper card: read by the camera, the fields filled in for checking.
+            if (contactId == null && !me && prefill == null) TextButton(onClick = onCard) {
+                Icon(AppIcons.ContactPage, null)
+                Spacer(Modifier.width(8.dp))
+                Text("Scan a business card")
+            }
             Group("Name") {
                 if (more) Input(d.name.prefix, "Title (Dr, Mrs)") { v -> edit { it.copy(name = it.name.copy(prefix = v)) } }
                 Input(d.name.given, "First name", capital = true) { v -> edit { it.copy(name = it.name.copy(given = v)) } }

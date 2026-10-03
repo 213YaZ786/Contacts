@@ -1,0 +1,54 @@
+# Once a week: is there a newer version of what the app pins by hand
+# (Tesseract4Android, the business card reader; tessdata_fast, its
+# languages)? If so, an issue says which, with what is needed to pin it.
+# Nothing changes by itself: a new engine or data is tested before it
+# reaches anyone. Libraries from Gradle are Dependabot's.
+name: Pinned engines
+
+on:
+  schedule:
+    - cron: '23 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Compare with the newest releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          issue() {
+            if gh issue list --state open --search "\"$1\" in:title" --json number -q '.[0].number' | grep -q .; then return; fi
+            gh issue create --title "$1" --body "$2"
+          }
+          newer() { [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -1)" = "$2" ]; }
+
+          # Tesseract4Android: the engine that reads business cards, an AAR from JitPack.
+          pinned=$(grep -oP 'val tesseractVersion = "\K[0-9.]+' app/build.gradle.kts)
+          latest=$(gh release view -R adaptech-cz/Tesseract4Android --json tagName -q .tagName | sed 's/^v//')
+          echo "Tesseract4Android pinned $pinned, latest $latest"
+          if newer "$pinned" "$latest"; then
+            curl -fsSL -o t4a.aar "https://jitpack.io/cz/adaptech/tesseract4android/tesseract4android/$latest/tesseract4android-$latest.aar" || true
+            sum=$( [ -s t4a.aar ] && sha256sum t4a.aar | cut -d' ' -f1 || echo "not built on JitPack yet")
+            issue "Tesseract4Android $latest is out (the app uses $pinned)" \
+              "Release notes: https://github.com/adaptech-cz/Tesseract4Android/releases/tag/$latest"$'\n\n'"SHA-256 of the AAR: \`$sum\`"$'\n\n'"To try it: set tesseractVersion and tesseractSha in app/build.gradle.kts, then read a few business cards before releasing."
+          fi
+
+          # tessdata_fast: the languages, fetched by the app on the user's tap at a pinned revision.
+          pinned=$(grep -oP 'const val REVISION = "\K[0-9a-f]+' app/src/main/java/com/yaz/contacts/core/ocr/OcrModels.kt)
+          latest=$(gh api repos/tesseract-ocr/tessdata_fast/commits?per_page=1 -q '.[0].sha')
+          echo "tessdata_fast pinned $pinned, latest $latest"
+          if [ "$pinned" != "$latest" ]; then
+            issue "tessdata_fast changed (revision ${latest:0:7})" \
+              "New revision: https://github.com/tesseract-ocr/tessdata_fast/tree/$latest"$'\n\n'"To try it: set REVISION and each language's size and SHA-256 in core/ocr/OcrModels.kt; phones fetch the new data after the update, when asked, and the old files go."
+          fi

@@ -3,6 +3,7 @@ package com.yaz.contacts
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import kotlinx.coroutines.launch
 import com.yaz.contacts.data.contacts.Offers
 
 /**
@@ -15,6 +16,16 @@ class DebugOfferReceiver : BroadcastReceiver() {
         // --es tap sent : the card went to the other phone; --es tap "<vCard>" : theirs came in.
         intent.getStringExtra("tap")?.let { tap ->
             com.yaz.contacts.feature.nfc.TapDemo.play(if (tap == "sent") null else tap.replace("\\n", "\r\n"))
+            return
+        }
+        // --es invite ask : asks SMS for this phone's invite and logs only whether it came and its shape.
+        if (intent.getStringExtra("invite") == "ask") {
+            val pending = goAsync()
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                val link = com.yaz.contacts.core.handoff.ChatLink.invite(context)
+                android.util.Log.i("ContactsDebug", "invite: " + (link?.let { "yes, ${it.length} chars, " + it.take(22) + "…" } ?: "none"))
+                pending.finish()
+            }
             return
         }
         val number = intent.getStringExtra("number") ?: return

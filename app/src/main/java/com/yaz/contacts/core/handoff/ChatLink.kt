@@ -16,7 +16,7 @@ object ChatLink {
 
     private val authorities = listOf("com.yaz.sms.invite", "com.yaz.sms.debug.invite")
 
-    /** This phone's invite, or null when SMS or its chat is not there. */
+    /** This phone's invite, or null when SMS or its chat is not there; up to 15 s while SMS's engine starts. */
     suspend fun invite(context: Context): String? = withContext(Dispatchers.IO) {
         call(context, "invite", null)?.getString("link")?.takeIf { valid(it) }
     }
@@ -35,8 +35,7 @@ object ChatLink {
         return null
     }
 
-    /** An invite as chatmail writes it (its OPENPGP4FPR form or its https://i.delta.chat link), nothing else. */
+    /** An invite as SMS gives it (its https://i.delta.chat link), nothing else. */
     fun valid(link: String): Boolean =
-        link.length in 20..2000 && link.none { it.isWhitespace() || it.isISOControl() } &&
-            (link.startsWith("OPENPGP4FPR:", ignoreCase = true) || link.startsWith("https://i.delta.chat/#"))
+        link.length in 20..2000 && link.none { it.isWhitespace() || it.isISOControl() } && link.startsWith("https://i.delta.chat/#")
 }
