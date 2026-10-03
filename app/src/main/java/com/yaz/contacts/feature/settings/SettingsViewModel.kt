@@ -22,6 +22,8 @@ class SettingsViewModel(val store: SettingsStore) : ViewModel() {
     fun setLastNameFirst(on: Boolean) = store.update { it.copy(lastNameFirst = on) }
     fun setDefaultAccount(key: String) = store.update { it.copy(defaultAccount = key) }
     fun setTrashDays(days: Int) = store.update { it.copy(trashDays = days) }
+    fun setLock(on: Boolean) = store.update { it.copy(lock = on) }
+    fun setLockAfter(seconds: Int) = store.update { it.copy(lockAfterSeconds = seconds) }
     fun setOnlyWithNumbers(on: Boolean) = store.update { it.copy(onlyWithNumbers = on) }
     fun setShownAccounts(keys: Set<String>) = store.update { it.copy(shownAccounts = keys) }
 }

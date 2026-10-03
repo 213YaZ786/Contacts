@@ -34,6 +34,8 @@
     <uses-feature android:name="android.hardware.nfc.hce" android:required="false" />
     <!-- Lets the user feel a person's vibration while choosing it. -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Locking Contacts with the fingerprint, the face or the phone's PIN, through Android's own prompt. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <!-- Hides other apps' floating windows over the editor and the delete
          question, so nothing can lay a false button over Save or Delete. Granted at install. -->
     <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />
@@ -229,6 +231,24 @@
             android:exported="false"
             android:isolatedProcess="true"
             android:process=":decoder" />
+
+        <!-- The favourites on the home screen. Only Android's widget host sends to it. -->
+        <receiver
+            android:name=".widget.FavoritesWidget"
+            android:exported="true"
+            android:permission="android.permission.BIND_APPWIDGET">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/favorites_widget" />
+        </receiver>
+        <!-- The widget's faces, read only by Android's widget host. -->
+        <service
+            android:name=".widget.FavoritesWidgetService"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
 
         <!-- After an update the app installed itself: a notification to open it again. -->
         <receiver

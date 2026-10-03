@@ -105,6 +105,8 @@ class ContactStore(private val context: Context, private val scope: CoroutineSco
         _contacts.value = people
         _groups.value = groups
         _changes.value++
+        // The home screen's favourites follow.
+        com.yaz.contacts.widget.FavoritesWidget.refresh(context)
     }
 
     private fun readAll(): List<Contact> = runCatching {

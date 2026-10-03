@@ -67,7 +67,7 @@ import com.yaz.contacts.ui.theme.TEXT_SCALES
 import com.yaz.contacts.ui.theme.textScaleLabel
 import org.koin.androidx.compose.koinViewModel
 
-private enum class OpenDialog { NONE, THEME, TEXT_SIZE, UPDATES, SORT, ACCOUNT, TRASH, SHOWN }
+private enum class OpenDialog { NONE, THEME, TEXT_SIZE, UPDATES, SORT, ACCOUNT, TRASH, SHOWN, LOCK }
 
 @Composable
 fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koinViewModel()) {
@@ -138,6 +138,29 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koinViewMo
                 )
             }
 
+            Section("Privacy") {
+                val canLock = remember { com.yaz.contacts.core.security.AppLock.possible(context) }
+                SwitchRow(
+                    title = "Lock Contacts",
+                    summary = if (canLock) "Opens with your fingerprint, face or the phone's PIN, from the app, the widget and other apps."
+                    else "Set a screen lock on the phone first.",
+                    checked = settings.lock && canLock,
+                    enabled = canLock,
+                    onChange = viewModel::setLock
+                )
+                if (settings.lock) SettingRow(
+                    title = "Lock again",
+                    summary = when (settings.lockAfterSeconds) { 0 -> "As soon as you leave"; 60 -> "1 minute after you leave"; else -> "${settings.lockAfterSeconds / 60} minutes after you leave" },
+                    onClick = { dialog = OpenDialog.LOCK }
+                )
+                SwitchRow(
+                    title = "Hide in recent apps",
+                    summary = "The app's preview stays blank in recent apps.",
+                    checked = settings.hideInRecents,
+                    onChange = viewModel::setHideInRecents
+                )
+            }
+
             Section("Appearance") {
                 SettingRow(
                     title = "Theme",
@@ -149,12 +172,6 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koinViewMo
                     summary = "Black background in dark mode.",
                     checked = settings.pureBlack,
                     onChange = viewModel::setPureBlack
-                )
-                SwitchRow(
-                    title = "Hide in recent apps",
-                    summary = "The app's preview stays blank in recent apps.",
-                    checked = settings.hideInRecents,
-                    onChange = viewModel::setHideInRecents
                 )
                 SwitchRow(
                     title = "Glass effects",
@@ -246,6 +263,13 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koinViewMo
                 onDismiss = { dialog = OpenDialog.NONE }
             )
         }
+        OpenDialog.LOCK -> ChoiceDialog(
+            title = "Lock again",
+            options = listOf(0 to "As soon as you leave", 60 to "1 minute after you leave", 300 to "5 minutes after you leave"),
+            selected = settings.lockAfterSeconds,
+            onSelect = viewModel::setLockAfter,
+            onDismiss = { dialog = OpenDialog.NONE }
+        )
         OpenDialog.SHOWN -> {
             val store: ContactStore = koinInject()
             val accounts = remember { store.accounts() }

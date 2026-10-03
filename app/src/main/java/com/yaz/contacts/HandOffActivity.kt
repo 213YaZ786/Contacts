@@ -28,6 +28,7 @@ import com.yaz.contacts.ui.component.EmptyZone
 import com.yaz.contacts.ui.component.LoadingMark
 import com.yaz.contacts.ui.icon.AppIcons
 import com.yaz.contacts.ui.theme.AppSurface
+import com.yaz.contacts.feature.main.Locked
 import org.koin.android.ext.android.inject
 
 /**
@@ -53,7 +54,7 @@ class HandOffActivity : ComponentActivity() {
         window.setHideOverlayWindows(true)
         hideWhenAsked(this, settings)
         setContent {
-            AppSurface {
+            AppSurface { Locked {
                 val start by produceState<String?>(null) { value = startOf(request) }
                 when (val route = start) {
                     null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { LoadingMark(size = 72.dp) }
@@ -67,7 +68,7 @@ class HandOffActivity : ComponentActivity() {
                     )
                     else -> ContactsApp(route, finish = ::done)
                 }
-            }
+            } }
         }
     }
 

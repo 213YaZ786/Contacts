@@ -10,6 +10,7 @@ import com.yaz.contacts.data.settings.SettingsStore
 import com.yaz.contacts.navigation.ContactsApp
 import com.yaz.contacts.navigation.Routes
 import com.yaz.contacts.ui.theme.AppSurface
+import com.yaz.contacts.feature.main.Locked
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -26,7 +27,7 @@ class MainActivity : ComponentActivity() {
         // Nothing of another app can float over Save or Delete.
         window.setHideOverlayWindows(true)
         if (savedInstanceState == null) asked.value = routeOf(intent)
-        setContent { AppSurface { ContactsApp(Routes.LIST, then = asked) } }
+        setContent { AppSurface { Locked { ContactsApp(Routes.LIST, then = asked) } } }
         hideWhenAsked(this, settings)
         // The icon's own shortcuts (a long press on it): new contact, scan.
         com.yaz.contacts.core.handoff.Shortcuts.publish(this)

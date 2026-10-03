@@ -48,7 +48,11 @@ data class Settings(
     /** Only people with a phone number in the list. */
     val onlyWithNumbers: Boolean = false,
     /** What stays out of the user's own card when shared (QR, touching phones): "tel:…", "mail:…", "web:…", "adr", "work", "bday". */
-    val keptBack: Set<String> = emptySet()
+    val keptBack: Set<String> = emptySet(),
+    /** Contacts opens only after the fingerprint, the face or the phone's PIN. */
+    val lock: Boolean = false,
+    /** How long the app stays open after leaving it, in seconds (0: locked at once). */
+    val lockAfterSeconds: Int = 60
 )
 
 /**
