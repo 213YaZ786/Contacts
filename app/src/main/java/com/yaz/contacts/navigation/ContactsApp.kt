@@ -129,6 +129,9 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
         modifier = Modifier.fillMaxSize()
     ) {
         composable(Routes.LIST) {
+            androidx.compose.runtime.CompositionLocalProvider(
+                com.yaz.contacts.feature.list.LocalImport provides { held -> nav.navigate("import?uri=" + Uri.encode("text:$held")) }
+            ) {
             Main(
                 onOpen = { nav.navigate(Routes.contact(it)) },
                 onMakeMe = { nav.navigate(Routes.edit(me = true)) },
@@ -139,6 +142,7 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                 onOpenTidy = { nav.navigate(Routes.TIDY) },
                 onAdd = { nav.navigate(Routes.edit()) }
             )
+            }
         }
         composable(Routes.CONTACT, arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
             val id = entry.arguments?.getLong("id") ?: return@composable

@@ -169,6 +169,8 @@ fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDelete
                 ) {
                     Spacer(Modifier.height(padding.calculateTopPadding() + 8.dp))
                     Header(d)
+                    Verified(d)
+                    SharedCard(d)
                     Spacer(Modifier.height(20.dp))
                     Actions(d, onQr = { showQr = true }, onScan = onScan)
                     Spacer(Modifier.height(16.dp))
@@ -285,6 +287,69 @@ private fun Header(d: Details) {
     if (also.isNotBlank()) Text(also, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
     val work = listOf(d.organization.title, d.organization.department, d.organization.company).filter { it.isNotBlank() }.joinToString(" · ")
     if (work.isNotBlank()) Text(work, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+}
+
+/** Their chat key was checked face to face in the messaging app. */
+@Composable
+private fun Verified(d: Details) {
+    val offers: com.yaz.contacts.data.contacts.Offers = koinInject()
+    val verified by offers.verified.collectAsState()
+    val context = LocalContext.current
+    val numbers = d.phones.map { it.value }
+    val state = remember(verified, numbers) { offers.isVerified(numbers) } ?: return
+    Spacer(Modifier.height(8.dp))
+    ZoneSurface(shape = CircleShape, onClick = { Reach.message(context, numbers.take(1)) }) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)) {
+            Icon(if (state) AppIcons.Verified else AppIcons.Lock, null, tint = if (state) AnswerGreen else MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(if (state) "Encrypted chat · verified" else "Encrypted chat", style = MaterialTheme.typography.labelLarge)
+        }
+    }
+}
+
+/** What they shared of themselves through the encrypted chat, waiting for the user's tap. */
+@Composable
+private fun SharedCard(d: Details) {
+    val offers: com.yaz.contacts.data.contacts.Offers = koinInject()
+    val all by offers.offers.collectAsState()
+    val writer: ContactWriter = koinInject()
+    val context = LocalContext.current
+    val haptics = rememberHaptics()
+    val scope = rememberCoroutineScope()
+    val offer = remember(all, d.phones) { offers.offerFor(d.phones.map { it.value }) } ?: return
+    val card = remember(offer) { com.yaz.contacts.core.vcard.VCard.parse(offer.card, max = 1).firstOrNull()?.details } ?: return
+    val changes = remember(card, d) { com.yaz.contacts.core.contacts.Shared.changes(d, card, offer.photo != null) }
+    if (changes.isEmpty()) {
+        LaunchedEffect(offer) { offers.drop(offer.number) }
+        return
+    }
+    Spacer(Modifier.height(14.dp))
+    ZoneSurface(shape = RoundedCornerShape(24.dp), accent = true, modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(AppIcons.Update, null)
+                Spacer(Modifier.width(10.dp))
+                Text("${d.name.given.ifBlank { d.display }} shared their card", style = MaterialTheme.typography.titleSmall)
+            }
+            Text("New: " + changes.joinToString(", "), style = MaterialTheme.typography.bodyMedium)
+            EvenRows(minSlot = 96.dp) {
+                ActionTile(AppIcons.Done, "Apply", accent = true) {
+                    scope.launch {
+                        val photo = offer.photo?.let { runCatching { android.util.Base64.decode(it, android.util.Base64.NO_WRAP) }.getOrNull() }
+                            ?.let { com.yaz.contacts.core.security.SafeImages.decode(context, it) }
+                        if (writer.save(d, com.yaz.contacts.core.contacts.Shared.apply(d, card), null, photo) != null) {
+                            haptics.done()
+                            offers.drop(offer.number)
+                        } else haptics.reject()
+                    }
+                }
+                ActionTile(AppIcons.Close, "Ignore") {
+                    haptics.tick()
+                    offers.drop(offer.number)
+                }
+            }
+        }
+    }
 }
 
 /** The ways to reach them, each a round pane of glass, wrapping onto a second line on a narrow screen. */

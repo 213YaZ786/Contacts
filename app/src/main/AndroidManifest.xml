@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Only apps signed with the user's own key (SMS, Dialer) may hand over
+         what contacts share through the encrypted chat. -->
+    <permission
+        android:name="${applicationId}.permission.CARDS"
+        android:protectionLevel="signature" />
+
     <!-- One request to GitHub when the app opens, for the newest release. Nothing else goes out. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Only used when the user chooses to install updates from the app; Android asks them then. -->
@@ -170,6 +176,15 @@
                 <data android:scheme="mailto" />
             </intent-filter>
         </activity>
+
+        <!-- What the user's contacts share through the messaging app's encrypted
+             chat, handed over by that app only (signature permission); kept as
+             offers until the user applies them. Nothing can be read through it. -->
+        <provider
+            android:name=".data.contacts.CardsProvider"
+            android:authorities="${applicationId}.cards"
+            android:exported="true"
+            android:permission="${applicationId}.permission.CARDS" />
 
         <!-- Pictures from outside are decoded here, in a process of its own
              with no permission, no files and no network. -->

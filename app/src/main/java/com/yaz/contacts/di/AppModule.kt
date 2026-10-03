@@ -20,6 +20,7 @@ val appModule = module {
     single { Trash(androidContext(), get()) }
     single { com.yaz.contacts.data.contacts.Snapshots(androidContext(), get(), get()) }
     single { com.yaz.contacts.core.handoff.Drafts() }
+    single { com.yaz.contacts.data.contacts.Offers.get(androidContext()) }
     single { com.yaz.contacts.feature.common.UndoState() }
     viewModelOf(::SettingsViewModel)
 }

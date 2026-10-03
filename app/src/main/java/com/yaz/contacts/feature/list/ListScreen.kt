@@ -338,6 +338,7 @@ private fun PeopleList(
                     onOpen = onMe
                 )
             }
+            item(key = "shared") { SharedWithYou(shown, onOpen) }
             if (birthdays.isNotEmpty()) {
                 item(key = "bday") { BirthdayCard(birthdays, onOpen) }
             }
@@ -385,7 +386,7 @@ private fun PeopleList(
             }
         }
         if (rail) {
-            val favCount = (if (favorites.isNotEmpty()) 2 else 0) + (if (birthdays.isNotEmpty()) 1 else 0) + (if (me != null) 1 else 0)
+            val favCount = 1 + (if (favorites.isNotEmpty()) 2 else 0) + (if (birthdays.isNotEmpty()) 1 else 0) + (if (me != null) 1 else 0)
             LetterRail(
                 letters = groups.keys.toList(),
                 onLetter = { letter ->
@@ -427,6 +428,54 @@ private fun ContactMenu(menu: com.yaz.contacts.ui.component.PillMenuState, c: Co
         )
     )
 }
+
+/**
+ * Cards people shared through the encrypted chat, on top of the list until
+ * applied or ignored on their page; one from someone not saved opens as a
+ * new contact to save.
+ */
+@Composable
+private fun SharedWithYou(people: List<Contact>, onOpen: (Long) -> Unit) {
+    val offers: com.yaz.contacts.data.contacts.Offers = koinInject()
+    val all by offers.offers.collectAsState()
+    if (all.isEmpty()) return
+    val drafts: com.yaz.contacts.core.handoff.Drafts = koinInject()
+    val nav = LocalImport.current
+    com.yaz.contacts.ui.component.ZoneSurface(
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+        accent = true,
+        modifier = Modifier.widthIn(max = LineWidth).fillMaxWidth()
+    ) {
+        androidx.compose.foundation.layout.Column(Modifier.padding(vertical = 6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp)) {
+                androidx.compose.material3.Icon(AppIcons.Update, null)
+                Text("Shared with you", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(start = 10.dp))
+            }
+            all.forEach { offer ->
+                val key = com.yaz.contacts.data.contacts.Offers.key(offer.number)
+                val who = people.firstOrNull { c -> c.phones.any { com.yaz.contacts.data.contacts.Offers.key(it) == key } }
+                val title = who?.name ?: com.yaz.contacts.core.vcard.VCard.parse(offer.card, max = 1).firstOrNull()?.title ?: offer.number
+                val haptics = rememberHaptics()
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().clickable {
+                        haptics.tick()
+                        if (who != null) onOpen(who.id) else nav(drafts.put(offer.card))
+                    }.padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    com.yaz.contacts.ui.component.ContactAvatar(title, who?.photo, 36.dp, look = who?.look?.forAvatar())
+                    androidx.compose.foundation.layout.Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                        Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                        Text(if (who != null) "Their card changed" else "Not in your contacts yet", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Opens the import screen for cards held in Drafts; given by the app's navigation. */
+val LocalImport = androidx.compose.runtime.staticCompositionLocalOf<(Long) -> Unit> { {} }
 
 /**
  * Birthdays today and in the week, on top of the list: a word to them goes

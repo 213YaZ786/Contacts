@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only: a way for tests to hand over a shared card as SMS would. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <receiver android:name="com.yaz.contacts.DebugOfferReceiver" android:exported="true" />
+    </application>
+</manifest>
