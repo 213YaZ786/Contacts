@@ -83,6 +83,8 @@ data class Details(
     val mainRaw: Long = 0L,
     val accounts: List<Account> = emptyList(),
     val readOnly: Boolean = false,
+    /** Raw contacts of accounts that do not take changes back: their rows are shown, never written. */
+    val readOnlyRaws: Set<Long> = emptySet(),
     val display: String = "",
     val name: Name = Name(),
     val nickname: Labelled? = null,

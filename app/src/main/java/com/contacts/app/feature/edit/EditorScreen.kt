@@ -124,7 +124,8 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
         account = accounts.firstOrNull { it.key == saved } ?: accounts.firstOrNull { it.type != null } ?: accounts.firstOrNull()
         val base = contactId?.let { store.details(it) }
         original = base
-        draft = merge(base ?: Details(), prefill)
+        // Rows of accounts that take no changes stay out of the editor, untouched.
+        draft = merge(base?.let { withoutLocked(it) } ?: Details(), prefill)
     }
 
     var photo by remember { mutableStateOf<Bitmap?>(null) }
@@ -143,7 +144,7 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
     }
 
     val d = draft
-    val changed = d != null && (d != (original ?: Details()) || photo != null || removePhoto)
+    val changed = d != null && (d != (original?.let { withoutLocked(it) } ?: Details()) || photo != null || removePhoto)
     fun close() {
         if (changed) leaving = true else onClose()
     }
@@ -315,6 +316,21 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
             dismissButton = { TextButton(onClick = { leaving = false }) { Text("Keep editing") } }
         )
     }
+}
+
+private fun withoutLocked(d: Details): Details {
+    val locked = d.readOnlyRaws
+    if (locked.isEmpty()) return d
+    return d.copy(
+        phones = d.phones.filter { it.rawId !in locked },
+        emails = d.emails.filter { it.rawId !in locked },
+        addresses = d.addresses.filter { it.rawId !in locked },
+        websites = d.websites.filter { it.rawId !in locked },
+        events = d.events.filter { it.rawId !in locked },
+        relations = d.relations.filter { it.rawId !in locked },
+        messengers = d.messengers.filter { it.rawId !in locked },
+        sips = d.sips.filter { it.rawId !in locked }
+    )
 }
 
 /** Nothing worth a contact: no name, company, number, email or address. */

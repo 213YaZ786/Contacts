@@ -321,7 +321,7 @@ class ContactStore(private val context: Context, private val scope: CoroutineSco
         val readOnly = firstWritable == 0L
         // New rows go to the raw contact that gives the name, unless it cannot be written.
         val main = details.mainRaw.takeIf { it != 0L && it !in readOnlyRaws } ?: firstWritable
-        details = details.copy(raws = raws, accounts = accounts.distinctBy { it.key }, readOnly = readOnly, mainRaw = main)
+        details = details.copy(raws = raws, accounts = accounts.distinctBy { it.key }, readOnly = readOnly, readOnlyRaws = readOnlyRaws, mainRaw = main)
 
         val phones = mutableListOf<Labelled>()
         val emails = mutableListOf<Labelled>()

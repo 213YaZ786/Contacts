@@ -71,6 +71,7 @@ class ContactWriter(private val context: Context) {
                     Target.Raw(original!!.mainRaw)
                 }
                 val before = original ?: Details()
+                locked = before.readOnlyRaws
 
                 // The name, in its parts; Android writes the display name from them.
                 with(edited.name) {
@@ -153,6 +154,9 @@ class ContactWriter(private val context: Context) {
             }.getOrNull()
         }
 
+    /** Raw contacts of the contact being saved that their account does not let change. */
+    @Volatile private var locked: Set<Long> = emptySet()
+
     private sealed interface Target {
         data class Back(val index: Int) : Target
         data class Raw(val id: Long) : Target
@@ -184,9 +188,9 @@ class ContactWriter(private val context: Context) {
 
     /** A kind with a label and a value, many rows: each compared by its row. */
     private fun list(ops: MutableList<ContentProviderOperation>, target: Target, mimetype: String, before: List<Labelled>, after: List<Labelled>, valueColumn: String) {
-        val kept = after.filter { it.value.isNotBlank() }
+        val kept = after.filter { it.value.isNotBlank() && it.rawId !in locked }
         val keptRows = kept.map { it.rowId }.toSet()
-        before.filter { it.rowId != 0L && it.rowId !in keptRows }.forEach { ops += deleteRow(it.rowId) }
+        before.filter { it.rowId != 0L && it.rowId !in keptRows && it.rawId !in locked }.forEach { ops += deleteRow(it.rowId) }
         val old = before.associateBy { it.rowId }
         kept.forEach { item ->
             val values = ContentValues().apply {
@@ -205,9 +209,9 @@ class ContactWriter(private val context: Context) {
 
     /** Messengers keep their service in the protocol column, not the label. */
     private fun messengers(ops: MutableList<ContentProviderOperation>, target: Target, before: List<Labelled>, after: List<Labelled>) {
-        val kept = after.filter { it.value.isNotBlank() }
+        val kept = after.filter { it.value.isNotBlank() && it.rawId !in locked }
         val keptRows = kept.map { it.rowId }.toSet()
-        before.filter { it.rowId != 0L && it.rowId !in keptRows }.forEach { ops += deleteRow(it.rowId) }
+        before.filter { it.rowId != 0L && it.rowId !in keptRows && it.rawId !in locked }.forEach { ops += deleteRow(it.rowId) }
         val old = before.associateBy { it.rowId }
         kept.forEach { item ->
             val values = ContentValues().apply {
@@ -224,9 +228,9 @@ class ContactWriter(private val context: Context) {
     }
 
     private fun addresses(ops: MutableList<ContentProviderOperation>, target: Target, before: List<Address>, after: List<Address>) {
-        val kept = after.filter { !it.isEmpty }
+        val kept = after.filter { !it.isEmpty && it.rawId !in locked }
         val keptRows = kept.map { it.rowId }.toSet()
-        before.filter { it.rowId != 0L && it.rowId !in keptRows }.forEach { ops += deleteRow(it.rowId) }
+        before.filter { it.rowId != 0L && it.rowId !in keptRows && it.rawId !in locked }.forEach { ops += deleteRow(it.rowId) }
         val old = before.associateBy { it.rowId }
         kept.forEach { a ->
             val values = ContentValues().apply {
