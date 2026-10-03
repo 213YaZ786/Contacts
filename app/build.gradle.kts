@@ -92,7 +92,7 @@ dependencies {
     // found under two spellings, offline: Google's libphonenumber (Apache-2.0).
     implementation("com.googlecode.libphonenumber:libphonenumber:9.0.40")
     // A contact as a QR code, and a QR code read back into a contact: ZXing's core (Apache-2.0).
-    implementation("com.google.zxing:core:3.5.3")
+    implementation("com.google.zxing:core:3.5.4")
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
