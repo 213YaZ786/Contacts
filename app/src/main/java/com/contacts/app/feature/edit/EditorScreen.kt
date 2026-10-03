@@ -62,6 +62,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -104,7 +105,7 @@ import org.koin.compose.koinInject
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSaved: (ContactWriter.Saved) -> Unit) {
+fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSaved: (ContactWriter.Saved) -> Unit, me: Boolean = false) {
     val store: ContactStore = koinInject()
     val writer: ContactWriter = koinInject()
     val settingsStore: SettingsStore = koinInject()
@@ -157,7 +158,7 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
         }
         saving = true
         scope.launch {
-            val saved = writer.save(original, edited, account, photo, removePhoto)
+            val saved = writer.save(original, edited, account, photo, removePhoto, me = me || (contactId != null && android.provider.ContactsContract.isProfileId(contactId)))
             saving = false
             if (saved == null) haptics.reject() else {
                 haptics.done()
@@ -170,7 +171,11 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
         bottom = 24.dp,
         top = {
             FloatingTop(
-                title = if (contactId == null) "New contact" else "Edit contact",
+                title = when {
+                    me && contactId == null -> "My card"
+                    contactId == null -> "New contact"
+                    else -> "Edit contact"
+                },
                 leading = { FloatingAction(AppIcons.Close, "Cancel", ::close) },
                 trailing = { FloatingAction(AppIcons.Done, "Save", ::save, tint = if (changed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant) }
             )
@@ -211,7 +216,7 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
             }
             Spacer(Modifier.height(8.dp))
             // Where a new contact is saved; an existing one stays where it is.
-            if (original == null && accounts.size > 1) {
+            if (original == null && accounts.size > 1 && !me) {
                 FloatingPane(shape = CircleShape, onClick = { choosingAccount = true }) {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp)) {
                         Icon(AppIcons.Account, null, modifier = Modifier.size(18.dp))
@@ -232,6 +237,7 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
                     Input(d.name.phoneticMiddle, "Middle name as it sounds") { v -> edit { it.copy(name = it.name.copy(phoneticMiddle = v)) } }
                     Input(d.name.phoneticFamily, "Last name as it sounds") { v -> edit { it.copy(name = it.name.copy(phoneticFamily = v)) } }
                     Input(d.nickname?.value.orEmpty(), "Nickname", capital = true) { v -> edit { it.copy(nickname = (it.nickname ?: Labelled(kind = 1, value = "")).copy(value = v)) } }
+                    Input(d.look.pronouns, "Pronouns (she/her, he/him, they/them…)") { v -> edit { it.copy(look = it.look.copy(pronouns = v.take(40))) } }
                 }
             }
             Group("Work") {
@@ -360,8 +366,12 @@ private fun Input(
     keyboard: KeyboardType = KeyboardType.Text,
     single: Boolean = true,
     capital: Boolean = false,
+    focus: Boolean = false,
     onChange: (String) -> Unit
 ) {
+    // A row just added takes the keyboard at once.
+    val requester = remember { androidx.compose.ui.focus.FocusRequester() }
+    if (focus) LaunchedEffect(Unit) { runCatching { requester.requestFocus() } }
     OutlinedTextField(
         value = value,
         onValueChange = { onChange(it.take(if (single) 300 else 5000)) },
@@ -375,7 +385,7 @@ private fun Input(
             focusedContainerColor = Color.Transparent,
             unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
         ),
-        modifier = modifier
+        modifier = modifier.focusRequester(requester)
     )
 }
 
@@ -393,10 +403,11 @@ private fun Rows(
     val haptics = rememberHaptics()
     val context = LocalContext.current
     var labelling by remember { mutableStateOf<Int?>(null) }
+    var added by remember { mutableStateOf(-1) }
     Group(title) {
         items.forEachIndexed { i, item ->
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Input(item.value, field.label(context.resources, item.kind, item.custom), Modifier.weight(1f), keyboard, capital = capital) { v ->
+                Input(item.value, field.label(context.resources, item.kind, item.custom), Modifier.weight(1f), keyboard, capital = capital, focus = i == added) { v ->
                     onChange(items.toMutableList().also { it[i] = item.copy(value = v) })
                 }
                 IconButton(onClick = { labelling = i }) { Icon(AppIcons.Label, "Label") }
@@ -408,6 +419,7 @@ private fun Rows(
         }
         AddRow("Add ${title.lowercase()}") {
             haptics.tick()
+            added = items.size
             onChange(items + Labelled(kind = newKind(items), value = ""))
         }
     }
@@ -463,6 +475,7 @@ private fun Addresses(items: List<Address>, onChange: (List<Address>) -> Unit) {
     val haptics = rememberHaptics()
     val context = LocalContext.current
     var labelling by remember { mutableStateOf<Int?>(null) }
+    var added by remember { mutableStateOf(-1) }
     Group("Address") {
         items.forEachIndexed { i, a ->
             fun set(change: (Address) -> Address) = onChange(items.toMutableList().also { it[i] = change(a) })
@@ -474,7 +487,7 @@ private fun Addresses(items: List<Address>, onChange: (List<Address>) -> Unit) {
                     onChange(items.toMutableList().also { it.removeAt(i) })
                 }) { Icon(AppIcons.Close, "Remove") }
             }
-            Input(a.street, "Street", single = false, capital = true) { v -> set { it.copy(street = v) } }
+            Input(a.street, "Street", single = false, capital = true, focus = i == added) { v -> set { it.copy(street = v) } }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Input(a.postcode, "Postcode", Modifier.weight(0.4f)) { v -> set { it.copy(postcode = v) } }
                 Input(a.city, "City", Modifier.weight(0.6f), capital = true) { v -> set { it.copy(city = v) } }
@@ -486,6 +499,7 @@ private fun Addresses(items: List<Address>, onChange: (List<Address>) -> Unit) {
         }
         AddRow("Add address") {
             haptics.tick()
+            added = items.size
             onChange(items + Address(kind = if (items.isEmpty()) StructuredPostal.TYPE_HOME else StructuredPostal.TYPE_WORK))
         }
     }

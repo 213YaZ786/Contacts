@@ -51,16 +51,17 @@ class ContactWriter(private val context: Context) {
      * else only what differs from [original]. [photo] replaces the photo,
      * [removePhoto] takes it away.
      */
-    suspend fun save(original: Details?, edited: Details, account: Account?, photo: Bitmap? = null, removePhoto: Boolean = false): Saved? =
+    suspend fun save(original: Details?, edited: Details, account: Account?, photo: Bitmap? = null, removePhoto: Boolean = false, me: Boolean = false): Saved? =
         withContext(Dispatchers.IO) {
             runCatching {
                 val ops = ArrayList<ContentProviderOperation>()
                 val isNew = original == null || original.mainRaw == 0L
                 // A new contact's rows point at the raw contact made by the first operation.
                 val target: Target = if (isNew) {
-                    ops += ContentProviderOperation.newInsert(RawContacts.CONTENT_URI)
-                        .withValue(RawContacts.ACCOUNT_TYPE, account?.type)
-                        .withValue(RawContacts.ACCOUNT_NAME, account?.name)
+                    // The user's own card goes to Android's profile, kept on the phone.
+                    ops += ContentProviderOperation.newInsert(if (me) ContactsContract.Profile.CONTENT_RAW_CONTACTS_URI else RawContacts.CONTENT_URI)
+                        .withValue(RawContacts.ACCOUNT_TYPE, if (me) null else account?.type)
+                        .withValue(RawContacts.ACCOUNT_NAME, if (me) null else account?.name)
                         .withValue(RawContacts.STARRED, if (edited.starred) 1 else 0)
                         .withValue(RawContacts.SEND_TO_VOICEMAIL, if (edited.toVoicemail) 1 else 0)
                         .withValue(RawContacts.CUSTOM_RINGTONE, edited.ringtone)
@@ -146,7 +147,9 @@ class ContactWriter(private val context: Context) {
                     photo != null -> writePhoto(rawId, photo)
                     removePhoto && original != null -> removePhoto(original)
                 }
-                Saved(contactId, ContactsContract.Contacts.getLookupUri(resolver, ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, contactId)))
+                val uri = if (ContactsContract.isProfileId(contactId)) ContactsContract.Profile.CONTENT_URI
+                else ContactsContract.Contacts.getLookupUri(resolver, ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, contactId))
+                Saved(contactId, uri)
             }.getOrNull()
         }
 
@@ -250,7 +253,7 @@ class ContactWriter(private val context: Context) {
     private fun rawTarget(target: Target, rawId: Long): Target = if (rawId != 0L && target is Target.Raw) Target.Raw(rawId) else target
 
     private fun contactOf(rawId: Long): Long? =
-        resolver.query(ContentUris.withAppendedId(RawContacts.CONTENT_URI, rawId), arrayOf(RawContacts.CONTACT_ID), null, null, null)
+        resolver.query(ContentUris.withAppendedId(if (ContactsContract.isProfileId(rawId)) ContactsContract.Profile.CONTENT_RAW_CONTACTS_URI else RawContacts.CONTENT_URI, rawId), arrayOf(RawContacts.CONTACT_ID), null, null, null)
             ?.use { if (it.moveToFirst()) it.getLong(0).takeIf { id -> id > 0 } else null }
 
     /** Star, ringtone and voicemail are the whole contact's: Android spreads them to its raw contacts. */
@@ -302,7 +305,8 @@ class ContactWriter(private val context: Context) {
             bitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
             out.toByteArray()
         }
-        val uri = Uri.withAppendedPath(ContentUris.withAppendedId(RawContacts.CONTENT_URI, rawId), RawContacts.DisplayPhoto.CONTENT_DIRECTORY)
+        val base = if (ContactsContract.isProfileId(rawId)) ContactsContract.Profile.CONTENT_RAW_CONTACTS_URI else RawContacts.CONTENT_URI
+        val uri = Uri.withAppendedPath(ContentUris.withAppendedId(base, rawId), RawContacts.DisplayPhoto.CONTENT_DIRECTORY)
         resolver.openAssetFileDescriptor(uri, "rw")?.use { fd -> fd.createOutputStream().use { it.write(bytes) } }
     }
 

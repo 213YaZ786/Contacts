@@ -130,7 +130,7 @@ fun FaceTile(name: String, photo: String?, onOpen: () -> Unit, onLongPress: () -
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
-            .width(84.dp)
+            .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .combinedClickable(
                 onClick = {

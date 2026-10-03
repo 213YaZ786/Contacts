@@ -77,7 +77,8 @@ import com.contacts.app.ui.component.FloatingFrame
 import com.contacts.app.ui.component.FloatingTop
 import com.contacts.app.ui.component.HeroGlow
 import com.contacts.app.ui.component.LoadingMark
-import com.contacts.app.ui.component.RoundAction
+import com.contacts.app.feature.common.ActionTile
+import com.contacts.app.feature.common.EvenRows
 import com.contacts.app.ui.component.ZoneSurface
 import com.contacts.app.ui.component.rememberHaptics
 import com.contacts.app.ui.icon.AppIcons
@@ -151,7 +152,7 @@ fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDelete
                 modifier = Modifier.fillMaxSize().padding(padding)
             )
             else -> Box(Modifier.fillMaxSize()) {
-                HeroGlow(d.photo ?: d.thumbnail, 380.dp)
+                HeroGlow(d.photo ?: d.thumbnail, 380.dp, color = d.look.color.takeIf { it != 0 }?.let { Color(it) })
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)
@@ -162,7 +163,7 @@ fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDelete
                     Actions(d, onQr = { showQr = true })
                     Spacer(Modifier.height(16.dp))
                     Fields(d)
-                    OnThisPhone(
+                    if (!android.provider.ContactsContract.isProfileId(d.id)) OnThisPhone(
                         d,
                         onRingtone = {
                             ringtonePicker.launch(
@@ -241,7 +242,8 @@ private fun Header(d: Details) {
     Text(d.display.ifBlank { "No name" }, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
     val phonetic = listOf(d.name.phoneticGiven, d.name.phoneticMiddle, d.name.phoneticFamily).filter { it.isNotBlank() }.joinToString(" ")
     if (phonetic.isNotBlank()) Text(phonetic, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    d.nickname?.value?.let { Text("“$it”", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+    val also = listOfNotNull(d.nickname?.value?.let { "“$it”" }, d.look.pronouns.takeIf { it.isNotBlank() }).joinToString(" · ")
+    if (also.isNotBlank()) Text(also, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
     val work = listOf(d.organization.title, d.organization.department, d.organization.company).filter { it.isNotBlank() }.joinToString(" · ")
     if (work.isNotBlank()) Text(work, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
 }
@@ -250,6 +252,15 @@ private fun Header(d: Details) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Actions(d: Details, onQr: () -> Unit) {
+    // The user's own card: only sharing it makes sense.
+    if (android.provider.ContactsContract.isProfileId(d.id)) {
+        val context = LocalContext.current
+        EvenRows(minSlot = 64.dp, modifier = Modifier.widthIn(max = 640.dp)) {
+            ActionTile(AppIcons.QrCode, "QR code", accent = true) { onQr() }
+            ActionTile(AppIcons.Share, "Share") { Reach.share(context, listOf(d.lookup), d.display) }
+        }
+        return
+    }
     val context = LocalContext.current
     val writer: ContactWriter = koinInject()
     val scope = rememberCoroutineScope()
@@ -257,25 +268,21 @@ private fun Actions(d: Details, onQr: () -> Unit) {
     var choosing by remember { mutableStateOf<String?>(null) }
     var sharing by remember { mutableStateOf(false) }
     val numbers = d.phones.map { it.value }.distinctBy { it.filter(Char::isDigit).takeLast(9) }
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        if (numbers.isNotEmpty()) RoundAction(AppIcons.Call, "Call", AnswerGreen) {
+    EvenRows(minSlot = 64.dp, modifier = Modifier.widthIn(max = 640.dp)) {
+        if (numbers.isNotEmpty()) ActionTile(AppIcons.Call, "Call", AnswerGreen) {
             if (numbers.size == 1) Reach.call(context, numbers[0]) else choosing = "call"
         }
-        if (numbers.isNotEmpty() && Reach.canMessage(context)) RoundAction(AppIcons.Message, "Message") {
+        if (numbers.isNotEmpty() && Reach.canMessage(context)) ActionTile(AppIcons.Message, "Message") {
             if (numbers.size == 1) Reach.message(context, numbers) else choosing = "message"
         }
-        if (d.emails.isNotEmpty() && Reach.canEmail(context)) RoundAction(AppIcons.Email, "Email") {
+        if (d.emails.isNotEmpty() && Reach.canEmail(context)) ActionTile(AppIcons.Email, "Email") {
             Reach.email(context, listOf(d.emails.first().value))
         }
-        RoundAction(if (d.starred) AppIcons.Star else AppIcons.StarOutline, "Favorite", StarGold) {
+        ActionTile(if (d.starred) AppIcons.Star else AppIcons.StarOutline, "Favorite", StarGold, accent = d.starred) {
             haptics.toggle(!d.starred)
             scope.launch { writer.star(d.id, !d.starred) }
         }
-        RoundAction(AppIcons.Share, "Share") { sharing = true }
+        ActionTile(AppIcons.Share, "Share") { sharing = true }
     }
     if (sharing) {
         com.contacts.app.ui.component.ZoneAlertDialog(
@@ -423,7 +430,7 @@ private fun OnThisPhone(d: Details, onRingtone: () -> Unit, onVoicemail: (Boolea
 @Composable
 private fun Elsewhere(d: Details, onDelete: () -> Unit, onSeparate: () -> Unit) {
     val context = LocalContext.current
-    val number = d.phones.firstOrNull()?.value
+    val number = d.phones.firstOrNull()?.value?.takeIf { !android.provider.ContactsContract.isProfileId(d.id) }
     InfoZone("More") {
         if (number != null && Reach.canShowCalls(context)) InfoRow(AppIcons.History, "Calls with them", "In Dialer", onClick = { Reach.calls(context, number) })
         if (number != null) InfoRow(AppIcons.Block, "Block", if (Reach.canShowCalls(context)) "In Dialer, for calls and messages" else "Android's blocked numbers", onClick = { Reach.block(context, number) })

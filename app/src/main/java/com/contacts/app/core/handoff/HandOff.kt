@@ -58,12 +58,15 @@ object HandOffs {
             Intent.ACTION_VIEW, ContactsContract.QuickContact.ACTION_QUICK_CONTACT -> {
                 val data = intent.data ?: return null
                 when {
-                    type?.startsWith("text/") == true || data.scheme == "file" || isCard(intent.type) -> Import(data)
-                    data.scheme == "content" -> HandOff.Show(data)
+                    // A card is read only from what the asking app shares, never
+                    // a path on the phone nor this app's own files.
+                    type?.startsWith("text/") == true || isCard(intent.type) ->
+                        data.takeIf { it.scheme == "content" && it.authority?.startsWith(OWN) != true }?.let { Import(it) }
+                    isContacts(data) -> HandOff.Show(data)
                     else -> null
                 }
             }
-            Intent.ACTION_EDIT -> intent.data?.takeIf { it.scheme == "content" }?.let { HandOff.Edit(it, prefill(intent)) }
+            Intent.ACTION_EDIT -> intent.data?.takeIf(::isContacts)?.let { HandOff.Edit(it, prefill(intent)) }
             Intent.ACTION_INSERT -> HandOff.Insert(prefill(intent), accountOf(intent))
             Intent.ACTION_INSERT_OR_EDIT -> HandOff.InsertOrEdit(prefill(intent))
             Intent.ACTION_PICK, Intent.ACTION_GET_CONTENT -> HandOff.Pick(pickKind(intent.type ?: intent.data?.toString().orEmpty()))
@@ -81,6 +84,14 @@ object HandOffs {
 
     @Suppress("FunctionName")
     private fun Import(uri: Uri) = HandOff.Import(uri)
+
+    /**
+     * Only Android's own contacts are opened: a URI of another app's store
+     * would have this app read it in its name.
+     */
+    private fun isContacts(uri: Uri) = uri.scheme == "content" && uri.authority in setOf(ContactsContract.AUTHORITY, "contacts")
+
+    private const val OWN = "com.contacts.app"
 
     private fun isCard(type: String?) = type == "text/vcard" || type == "text/x-vcard" || type == "text/directory"
 

@@ -163,7 +163,9 @@ data class Look(
     /** A vibration of their own for their calls and messages: one of VIBRATIONS' keys, "" for the phone's. */
     val vibration: String = "",
     /** An emoji shown when there is no photo. */
-    val emoji: String = ""
+    val emoji: String = "",
+    /** How they want to be spoken of (she/her, he/him, they/them, or their own words), shown under the name. */
+    val pronouns: String = ""
 ) {
     val isDefault: Boolean get() = this == Look()
 }
@@ -173,6 +175,17 @@ data class Look(
 enum class SortOrder { FIRST_NAME, LAST_NAME }
 
 object Contacts {
+
+    /**
+     * Birthdays within [days] of [today], soonest first, with the days to
+     * wait and the age reached when the year is known.
+     */
+    fun birthdays(all: List<Contact>, today: java.time.LocalDate, days: Int = 7): List<Triple<Contact, Long, Int?>> =
+        all.mapNotNull { c ->
+            val date = c.birthday?.let { Dates.parse(it) } ?: return@mapNotNull null
+            val wait = date.daysUntil(today)
+            if (wait > days) null else Triple(c, wait, date.ageNext(today))
+        }.sortedWith(compareBy({ it.second }, { People.plain(it.first.name) }))
 
     /** The letter a name files under; digits and signs under #. */
     fun initialOf(name: String): String =

@@ -23,6 +23,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        // Nothing of another app can float over Save or Delete.
+        window.setHideOverlayWindows(true)
         setContent { AppSurface { ContactsApp(Routes.LIST) } }
         hideWhenAsked(this, settings)
     }

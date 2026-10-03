@@ -23,7 +23,8 @@ object LookCodec {
         val y: Float = 0.4f,
         val style: String = "classic",
         val vibration: String = "",
-        val emoji: String = ""
+        val emoji: String = "",
+        val pronouns: String = ""
     )
 
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = false }
@@ -37,7 +38,8 @@ object LookCodec {
             y = look.posterY,
             style = look.posterStyle,
             vibration = look.vibration,
-            emoji = look.emoji
+            emoji = look.emoji,
+            pronouns = look.pronouns
         )
     )
 
@@ -52,7 +54,8 @@ object LookCodec {
             posterY = s.y.takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 0.4f,
             posterStyle = s.style.takeIf { it in POSTER_STYLES } ?: "classic",
             vibration = s.vibration.takeIf { it in VIBRATIONS } ?: "",
-            emoji = s.emoji.take(16)
+            emoji = s.emoji.take(16),
+            pronouns = s.pronouns.filter { !it.isISOControl() }.take(40)
         )
     }
 

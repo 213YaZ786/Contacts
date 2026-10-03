@@ -42,7 +42,8 @@ import com.contacts.app.ui.component.EmptyZone
 import com.contacts.app.ui.component.FloatingAction
 import com.contacts.app.ui.component.FloatingFrame
 import com.contacts.app.ui.component.FloatingTop
-import com.contacts.app.ui.component.RoundAction
+import com.contacts.app.feature.common.ActionTile
+import com.contacts.app.feature.common.EvenRows
 import com.contacts.app.ui.component.SearchPill
 import com.contacts.app.ui.component.ZoneAlertDialog
 import com.contacts.app.ui.component.rememberHaptics
@@ -92,14 +93,14 @@ fun LabelScreen(id: Long, onBack: () -> Unit, onOpen: (Long) -> Unit) {
             modifier = Modifier.fillMaxSize()
         ) {
             item(key = "actions") {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                EvenRows(minSlot = 72.dp, modifier = Modifier.widthIn(max = 640.dp).padding(bottom = 8.dp)) {
                     val numbers = members.mapNotNull { it.phones.firstOrNull() }
                     val emails = members.mapNotNull { it.emails.firstOrNull() }
                     // Everyone at once: a group conversation in the messaging app.
-                    if (numbers.isNotEmpty() && Reach.canMessage(context)) RoundAction(AppIcons.Message, "Message all") { Reach.message(context, numbers) }
-                    if (emails.isNotEmpty() && Reach.canEmail(context)) RoundAction(AppIcons.Email, "Email all") { Reach.email(context, emails) }
-                    RoundAction(AppIcons.PersonAdd, "Add people") { adding = true }
-                    RoundAction(AppIcons.Delete, "Delete label", AlertRed) { deleting = true }
+                    if (numbers.isNotEmpty() && Reach.canMessage(context)) ActionTile(AppIcons.Message, "Message all") { Reach.message(context, numbers) }
+                    if (emails.isNotEmpty() && Reach.canEmail(context)) ActionTile(AppIcons.Email, "Email all") { Reach.email(context, emails) }
+                    ActionTile(AppIcons.PersonAdd, "Add people") { adding = true }
+                    ActionTile(AppIcons.Delete, "Delete label", AlertRed) { deleting = true }
                 }
             }
             if (members.isEmpty()) item { EmptyZone(title = "No one here yet", message = "Add people to this label.", icon = AppIcons.Label) }

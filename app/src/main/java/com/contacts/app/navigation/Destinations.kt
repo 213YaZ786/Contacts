@@ -5,7 +5,7 @@ import android.net.Uri
 object Routes {
     const val LIST = "list"
     const val CONTACT = "contact/{id}"
-    const val EDIT = "edit?id={id}&draft={draft}"
+    const val EDIT = "edit?id={id}&draft={draft}&me={me}"
     const val CHOOSE = "choose?draft={draft}"
     const val PICK = "pick/{kind}"
     const val IMPORT = "import?uri={uri}"
@@ -17,7 +17,7 @@ object Routes {
     fun contact(id: Long) = "contact/$id"
 
     /** The editor: a contact by [id], or a new one; [draft] holds what to fill in (see Drafts). */
-    fun edit(id: Long? = null, draft: Long? = null) = "edit?id=${id ?: -1}&draft=${draft ?: -1}"
+    fun edit(id: Long? = null, draft: Long? = null, me: Boolean = false) = "edit?id=${id ?: -1}&draft=${draft ?: -1}&me=$me"
 
     /** Add to a contact, new or existing: the person to add it to is chosen first. */
     fun choose(draft: Long) = "choose?draft=$draft"

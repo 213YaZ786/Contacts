@@ -131,6 +131,8 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
         composable(Routes.LIST) {
             Main(
                 onOpen = { nav.navigate(Routes.contact(it)) },
+                onMakeMe = { nav.navigate(Routes.edit(me = true)) },
+                onEdit = { nav.navigate(Routes.edit(it)) },
                 onOpenSettings = { nav.navigate(Routes.SETTINGS) },
                 onOpenTidy = { nav.navigate(Routes.TIDY) },
                 onAdd = { nav.navigate(Routes.edit()) }
@@ -151,15 +153,18 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
             Routes.EDIT,
             arguments = listOf(
                 navArgument("id") { type = NavType.LongType; defaultValue = -1L },
-                navArgument("draft") { type = NavType.LongType; defaultValue = -1L }
+                navArgument("draft") { type = NavType.LongType; defaultValue = -1L },
+                navArgument("me") { type = NavType.BoolType; defaultValue = false }
             )
         ) { entry ->
             val id = entry.arguments?.getLong("id")?.takeIf { it >= 0 }
+            val me = entry.arguments?.getBoolean("me") == true
             val prefill = entry.arguments?.getLong("draft")?.takeIf { it >= 0 }?.let { drafts.peek(it) as? Details }
             ReadableScroll {
                 EditorScreen(
                     contactId = id,
                     prefill = prefill,
+                    me = me,
                     onClose = ::back,
                     onSaved = { saved ->
                         if (finish != null) {
@@ -242,7 +247,7 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
 
 /** The list, the way to a new contact floating over it, the first launch page until closed. */
 @Composable
-private fun Main(onOpen: (Long) -> Unit, onOpenSettings: () -> Unit, onOpenTidy: () -> Unit, onAdd: () -> Unit) {
+private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) -> Unit, onOpenSettings: () -> Unit, onOpenTidy: () -> Unit, onAdd: () -> Unit) {
     val store: SettingsStore = koinInject()
     var showWelcome by rememberSaveable { mutableStateOf(!store.current.welcomeSeen) }
     val settings by store.settings.collectAsState()
@@ -250,9 +255,28 @@ private fun Main(onOpen: (Long) -> Unit, onOpenSettings: () -> Unit, onOpenTidy:
 
     val look = LocalGlass.current
     val backdrop = rememberGlassBackdrop()
-    Box(Modifier.fillMaxSize()) {
+    // A wide window shows the list and the person side by side.
+    var picked by rememberSaveable { mutableStateOf<Long?>(null) }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val wide = maxWidth >= 840.dp
         Box(Modifier.fillMaxSize().then(if (look != null) Modifier.glassSource(backdrop, look) else Modifier)) {
-            ReadableScroll { ListScreen(onOpen = onOpen, onOpenSettings = onOpenSettings, onOpenTidy = onOpenTidy) }
+            if (!wide) {
+                ReadableScroll { ListScreen(onOpen = onOpen, onMakeMe = onMakeMe, onOpenSettings = onOpenSettings, onOpenTidy = onOpenTidy) }
+            } else androidx.compose.foundation.layout.Row(Modifier.fillMaxSize()) {
+                Box(Modifier.weight(0.42f).fillMaxSize()) {
+                    ListScreen(onOpen = { picked = it }, onMakeMe = { picked = null; onMakeMe() }, onOpenSettings = onOpenSettings, onOpenTidy = onOpenTidy)
+                }
+                Box(Modifier.weight(0.58f).fillMaxSize()) {
+                    androidx.compose.animation.Crossfade(picked, label = "pane") { id ->
+                        if (id == null) com.contacts.app.ui.component.EmptyZone(
+                            title = "Choose someone",
+                            message = "Their page opens here.",
+                            icon = AppIcons.Person,
+                            modifier = Modifier.fillMaxSize()
+                        ) else ContactScreen(id = id, onBack = { picked = null }, onEdit = onEdit, onDeleted = { picked = null })
+                    }
+                }
+            }
         }
         CompositionLocalProvider(LocalGlassBackdrop provides backdrop.takeIf { look != null }) {
             MovableAddButton(onClick = onAdd, above = 16.dp)

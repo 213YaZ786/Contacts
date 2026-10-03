@@ -262,9 +262,14 @@ class ContactStore(private val context: Context, private val scope: CoroutineSco
     }
 
     private fun readDetails(contactId: Long): Details? {
+        // The user's own card lives in Android's profile, its own corner of the store.
+        val me = ContactsContract.isProfileId(contactId)
+        val contactsUri = if (me) ContactsContract.Profile.CONTENT_URI else ContactsContract.Contacts.CONTENT_URI
+        val rawUri = if (me) ContactsContract.Profile.CONTENT_RAW_CONTACTS_URI else RawContacts.CONTENT_URI
+        val dataUri = if (me) Uri.withAppendedPath(ContactsContract.Profile.CONTENT_URI, "data") else Data.CONTENT_URI
         var details = Details(id = contactId)
         resolver.query(
-            ContactsContract.Contacts.CONTENT_URI,
+            contactsUri,
             arrayOf(
                 ContactsContract.Contacts.LOOKUP_KEY,
                 ContactsContract.Contacts.DISPLAY_NAME_PRIMARY,
@@ -299,7 +304,7 @@ class ContactStore(private val context: Context, private val scope: CoroutineSco
         val readOnlyRaws = mutableSetOf<Long>()
         var firstWritable = 0L
         resolver.query(
-            RawContacts.CONTENT_URI,
+            rawUri,
             arrayOf(RawContacts._ID, RawContacts.ACCOUNT_TYPE, RawContacts.ACCOUNT_NAME),
             "${RawContacts.CONTACT_ID} = ? AND ${RawContacts.DELETED} = 0", arrayOf(contactId.toString()), null
         )?.use { c ->
@@ -328,7 +333,7 @@ class ContactStore(private val context: Context, private val scope: CoroutineSco
         val sips = mutableListOf<Labelled>()
         val groups = mutableMapOf<Long, Long>()
         resolver.query(
-            Data.CONTENT_URI,
+            dataUri,
             arrayOf(
                 Data._ID, Data.RAW_CONTACT_ID, Data.MIMETYPE, Data.IS_SUPER_PRIMARY,
                 Data.DATA1, Data.DATA2, Data.DATA3, Data.DATA4, Data.DATA5, Data.DATA6, Data.DATA7, Data.DATA8, Data.DATA9, Data.DATA10
@@ -375,6 +380,20 @@ class ContactStore(private val context: Context, private val scope: CoroutineSco
             groups = groups.keys,
             groupRows = groups
         )
+    }
+
+    /** The user's own card (Android's profile), if they made one. */
+    suspend fun me(): Contact? = withContext(Dispatchers.IO) {
+        if (!canRead()) return@withContext null
+        runCatching {
+            resolver.query(
+                ContactsContract.Profile.CONTENT_URI,
+                arrayOf(ContactsContract.Contacts._ID, ContactsContract.Contacts.LOOKUP_KEY, ContactsContract.Contacts.DISPLAY_NAME_PRIMARY, ContactsContract.Contacts.PHOTO_THUMBNAIL_URI),
+                null, null, null
+            )?.use { c ->
+                if (!c.moveToFirst()) null else Contact(c.getLong(0), c.getString(1).orEmpty(), c.getString(2).orEmpty(), c.getString(2).orEmpty(), c.getString(3), false)
+            }
+        }.getOrNull()
     }
 
     /** The contact with this number or address, if any, for "show or create". */
