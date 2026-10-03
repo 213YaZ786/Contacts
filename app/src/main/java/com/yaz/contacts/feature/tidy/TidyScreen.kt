@@ -150,7 +150,7 @@ fun TidyScreen(onBack: () -> Unit, onOpen: (Long) -> Unit, onTrash: () -> Unit, 
             InfoZone("In and out") {
                 InfoRow(AppIcons.PhotoCamera, "Scan a contact's QR code", "From another phone or a printed card", onClick = onScan)
                 InfoRow(AppIcons.ContactPage, "Scan a business card", "Read on the phone into a new contact", onClick = onCard)
-                if (context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_NFC)) InfoRow(AppIcons.Nfc, "Get a card by touching phones", "From a phone or an NFC tag", onClick = onTap)
+                if (context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_NFC)) InfoRow(AppIcons.Nfc, "Get a card by Drop", "Phones held together, or an NFC tag", onClick = onTap)
                 InfoRow(AppIcons.Download, "Import from a file", "Contact cards (.vcf)", onClick = { importer.launch(arrayOf("text/x-vcard", "text/vcard", "text/directory", "text/plain", "application/octet-stream")) })
                 InfoRow(AppIcons.Upload, "Export to a file", "All ${all.orEmpty().size} contacts as cards (.vcf)", onClick = { exporter.launch("contacts.vcf") })
                 InfoRow(AppIcons.SimCard, "Import from the SIM card", null, onClick = {

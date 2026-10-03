@@ -22,7 +22,7 @@ object Routes {
 
     fun private(id: String) = "private/$id"
 
-    /** Tap to share (NFC): gives the user's card, or the contact [id]'s, and takes theirs. */
+    /** Drop (NFC): gives the user's card, or the contact [id]'s, and takes theirs. */
     fun tap(give: Boolean, id: Long = -1L) = "tap?give=$give&id=$id"
 
     fun poster(id: Long) = "poster/$id"
