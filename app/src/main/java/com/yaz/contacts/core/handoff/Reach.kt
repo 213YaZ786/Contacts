@@ -56,6 +56,12 @@ object Reach {
         open(context, Intent(Intent.ACTION_VIEW).setDataAndType(android.content.ContentUris.withAppendedId(ContactsContract.Data.CONTENT_URI, rowId), mimetype))
     }
 
+    /** The encryption keys of the chat with [number], in SMS; without it, the conversation. */
+    fun keys(context: Context, number: String) {
+        val uri = Uri.fromParts("smsto", number, null)
+        if (!open(context, Intent("com.yaz.sms.action.SHOW_KEYS", uri))) message(context, listOf(number))
+    }
+
     fun canMessage(context: Context): Boolean = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:0")).resolveActivity(context.packageManager) != null
     fun canEmail(context: Context): Boolean = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:")).resolveActivity(context.packageManager) != null
 

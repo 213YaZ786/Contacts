@@ -140,18 +140,20 @@ fun PosterScreen(id: Long, onBack: () -> Unit) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { LoadingMark(size = 72.dp) }
             return@FloatingFrame
         }
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+        val room = maxHeight
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(14.dp),
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)
         ) {
             Spacer(Modifier.height(padding.calculateTopPadding()))
-            // At the phone's own proportions, as large as the window lets it be.
-            BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                val ratio = 9f / 19.5f
-                val width = minOf(maxWidth, 360.dp)
-                Poster(d.display, photo, look, Modifier.width(width).aspectRatio(ratio)) { look = it }
-            }
+            // At the phone's own proportions, as large as the window lets it be
+            // while the styles and colours stay in sight below it.
+            val ratio = 9f / 19.5f
+            val height = (room - padding.calculateTopPadding() - CONTROLS).coerceAtLeast(240.dp)
+            val width = minOf(height * ratio, 360.dp)
+            Poster(d.display, photo, look, Modifier.width(width).aspectRatio(ratio)) { look = it }
             if (photo != null) Text("Pinch to zoom, drag to frame", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             // The name's styles, each shown in its own letters.
             EvenRows(minSlot = 56.dp, gap = 8.dp, modifier = Modifier.widthIn(max = 520.dp)) {
@@ -164,7 +166,7 @@ fun PosterScreen(id: Long, onBack: () -> Unit) {
                     }
                 }
             }
-            EvenRows(minSlot = 36.dp, gap = 8.dp, modifier = Modifier.widthIn(max = 520.dp)) {
+            EvenRows(minSlot = 32.dp, gap = 8.dp, modifier = Modifier.widthIn(max = 400.dp)) {
                 val accent = MaterialTheme.colorScheme.primary
                 PERSON_COLOURS.forEach { c ->
                     val colour = if (c == 0) accent else Color(c)
@@ -185,8 +187,12 @@ fun PosterScreen(id: Long, onBack: () -> Unit) {
             Spacer(Modifier.height(16.dp))
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
         }
+        }
     }
 }
+
+/** What the styles, the colours and the hint take under the poster. */
+private val CONTROLS = 270.dp
 
 /** The poster as Dialer draws it full screen: photo framed, dark fade, name on top. */
 @Composable
@@ -194,7 +200,9 @@ fun Poster(name: String, photo: ImageBitmap?, look: Look, modifier: Modifier, on
     val pop = remember { Animatable(0.94f) }
     LaunchedEffect(Unit) { pop.animateTo(1f, spring(dampingRatio = 0.6f, stiffness = 300f)) }
     val tone = if (look.color != 0) Color(look.color) else MaterialTheme.colorScheme.primary
-    var size by remember { mutableStateOf(IntSize.Zero) }
+    // The gesture reads the framing as it is now, not as it was when the finger came down.
+    val current by androidx.compose.runtime.rememberUpdatedState(look)
+    val frame by androidx.compose.runtime.rememberUpdatedState(onFrame)
     Box(
         modifier
             .graphicsLayer {
@@ -209,6 +217,7 @@ fun Poster(name: String, photo: ImageBitmap?, look: Look, modifier: Modifier, on
                 Modifier.fillMaxSize().then(
                     if (onFrame == null) Modifier else Modifier.pointerInput(photo) {
                         detectTransformGestures { _, pan, zoom, _ ->
+                            val look = current
                             val z = (look.posterZoom * zoom).coerceIn(1f, 4f)
                             val fit = max(this.size.width.toFloat() / photo.width, this.size.height.toFloat() / photo.height) * z
                             val w = photo.width * fit
@@ -218,7 +227,7 @@ fun Poster(name: String, photo: ImageBitmap?, look: Look, modifier: Modifier, on
                             val minY = this.size.height / 2f / h
                             val x = (look.posterX - pan.x / w).coerceIn(minX, 1f - minX)
                             val y = (look.posterY - pan.y / h).coerceIn(minY, 1f - minY)
-                            onFrame(look.copy(posterZoom = z, posterX = x, posterY = y))
+                            frame?.invoke(look.copy(posterZoom = z, posterX = x, posterY = y))
                         }
                     }
                 )
@@ -245,13 +254,20 @@ fun Poster(name: String, photo: ImageBitmap?, look: Look, modifier: Modifier, on
                 modifier = Modifier.align(Alignment.Center)
             )
         }
-        Text(
-            if (look.posterStyle == "bold") name.uppercase() else name,
-            style = nameStyle(look.posterStyle, 34f).copy(color = Color.White, shadow = Shadow(Color.Black.copy(alpha = 0.35f), Offset(0f, 2f), 12f)),
-            textAlign = TextAlign.Center,
-            maxLines = 2,
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 48.dp, start = 16.dp, end = 16.dp)
-        )
+        // The name as large as fits: its longest word never cut, at most 34.
+        BoxWithConstraints(Modifier.fillMaxWidth().align(Alignment.TopCenter).padding(top = 48.dp, start = 16.dp, end = 16.dp)) {
+            val shown = if (look.posterStyle == "bold") name.uppercase() else name
+            val longest = shown.split(' ').maxOfOrNull { it.length }?.coerceAtLeast(4) ?: 4
+            val widthFactor = if (look.posterStyle == "bold") 0.72f else 0.6f
+            val size = minOf(34f, maxWidth.value / (longest * widthFactor * (if (look.posterStyle == "bold") 1.15f else 1f)))
+            Text(
+                shown,
+                style = nameStyle(look.posterStyle, size).copy(color = Color.White, shadow = Shadow(Color.Black.copy(alpha = 0.35f), Offset(0f, 2f), 12f)),
+                textAlign = TextAlign.Center,
+                maxLines = 3,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
 }
 

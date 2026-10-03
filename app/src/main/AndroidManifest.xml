@@ -56,6 +56,10 @@
             <data android:mimeType="vnd.android.cursor.item/*" />
         </intent>
         <intent>
+            <action android:name="com.yaz.sms.action.SHOW_KEYS" />
+            <data android:scheme="smsto" />
+        </intent>
+        <intent>
             <action android:name="com.dialer.app.action.SHOW_NUMBER" />
             <data android:scheme="tel" />
         </intent>

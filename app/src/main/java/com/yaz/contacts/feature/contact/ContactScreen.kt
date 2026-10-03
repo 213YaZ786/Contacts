@@ -298,7 +298,7 @@ private fun Verified(d: Details) {
     val numbers = d.phones.map { it.value }
     val state = remember(verified, numbers) { offers.isVerified(numbers) } ?: return
     Spacer(Modifier.height(8.dp))
-    ZoneSurface(shape = CircleShape, onClick = { Reach.message(context, numbers.take(1)) }) {
+    ZoneSurface(shape = CircleShape, onClick = { numbers.firstOrNull()?.let { Reach.keys(context, it) } }) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)) {
             Icon(if (state) AppIcons.Verified else AppIcons.Lock, null, tint = if (state) AnswerGreen else MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(6.dp))
