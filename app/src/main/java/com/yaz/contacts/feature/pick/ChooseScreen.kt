@@ -2,6 +2,9 @@ package com.yaz.contacts.feature.pick
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -70,7 +73,7 @@ fun ChooseScreen(adding: Details?, onClose: () -> Unit, onNew: () -> Unit, onExi
             FloatingTop(title = what?.let { "Add $it" } ?: "Add to contacts", leading = { FloatingAction(AppIcons.Close, "Cancel", onClose) })
             Box(Modifier.fillMaxWidth().padding(top = 4.dp), contentAlignment = Alignment.TopCenter) { SetupZone() }
             Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
-                SearchPill(query, { query = it }, hint = "Add to someone", modifier = Modifier.widthIn(max = 560.dp).weight(1f, fill = false).fillMaxWidth(), floating = true)
+                SearchPill(query, { query = it }, hint = "Find someone already saved", modifier = Modifier.widthIn(max = 560.dp).weight(1f, fill = false).fillMaxWidth(), floating = true)
             }
         }
     ) { padding ->
@@ -81,17 +84,41 @@ fun ChooseScreen(adding: Details?, onClose: () -> Unit, onNew: () -> Unit, onExi
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxSize()
         ) {
+            // The usual case first and clearly: a new person, in a large filled card.
             item(key = "new") {
-                ZoneSurface(shape = RoundedCornerShape(22.dp), accent = true, onClick = {
-                    haptics.tick()
-                    onNew()
-                }, modifier = Modifier.widthIn(max = LineWidth).fillMaxWidth()) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
-                        Icon(AppIcons.PersonAdd, null, modifier = Modifier.size(28.dp))
-                        Spacer(Modifier.width(16.dp))
-                        Text("New contact", style = MaterialTheme.typography.titleMedium)
+                val shape = RoundedCornerShape(28.dp)
+                androidx.compose.material3.Surface(
+                    shape = shape,
+                    color = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shadowElevation = 4.dp,
+                    onClick = {
+                        haptics.firm()
+                        onNew()
+                    },
+                    modifier = Modifier.widthIn(max = LineWidth).fillMaxWidth()
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 22.dp, vertical = 22.dp)) {
+                        Box(
+                            Modifier.size(52.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)),
+                            contentAlignment = Alignment.Center
+                        ) { Icon(AppIcons.PersonAdd, null, modifier = Modifier.size(28.dp)) }
+                        Spacer(Modifier.width(18.dp))
+                        Column {
+                            Text("Create a new contact", style = MaterialTheme.typography.titleLarge)
+                            what?.let { Text("With $it", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)) }
+                        }
                     }
                 }
+            }
+            // Then, apart: the people already saved, to give them this number too.
+            item(key = "existing") {
+                Text(
+                    "Or add it to someone already saved",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.widthIn(max = LineWidth).fillMaxWidth().padding(start = 8.dp, top = 18.dp, bottom = 2.dp)
+                )
             }
             when {
                 list == null -> item { Box(Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) { LoadingMark(size = 56.dp) } }
