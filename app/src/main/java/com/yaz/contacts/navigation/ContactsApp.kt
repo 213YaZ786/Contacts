@@ -147,6 +147,7 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                 onEdit = { nav.navigate(Routes.edit(it)) },
                 onScan = { nav.navigate(Routes.SCAN) },
                 onPoster = { nav.navigate(Routes.poster(it)) },
+                onTap = { nav.navigate(Routes.tap(true)) },
                 onOpenSettings = { nav.navigate(Routes.SETTINGS) },
                 onOpenTidy = { nav.navigate(Routes.TIDY) },
                 onAdd = { nav.navigate(Routes.edit()) }
@@ -162,6 +163,7 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                     onEdit = { nav.navigate(Routes.edit(it)) },
                     onDeleted = ::back,
                     onScan = { nav.navigate(Routes.SCAN) },
+                    onTap = { nav.navigate(Routes.tap(true)) },
                     onPoster = { nav.navigate(Routes.poster(it)) },
                     onMoved = { moved ->
                         nav.popBackStack()
@@ -251,6 +253,7 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                     onTrash = { nav.navigate(Routes.TRASH) },
                     onUndo = { nav.navigate(Routes.UNDO) },
                     onScan = { nav.navigate(Routes.SCAN) },
+                    onTap = { nav.navigate(Routes.tap(false)) },
                     onLabel = { nav.navigate(Routes.label(it)) },
                     onImport = { nav.navigate(Routes.import(it)) },
                     onImportText = { text -> nav.navigate("import?uri=" + Uri.encode("text:" + drafts.put(text))) }
@@ -260,6 +263,18 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
         composable(Routes.POSTER, arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
             val id = entry.arguments?.getLong("id") ?: return@composable
             com.yaz.contacts.feature.contact.PosterScreen(id, onBack = ::back)
+        }
+        composable(Routes.TAP, arguments = listOf(navArgument("give") { type = NavType.BoolType; defaultValue = true })) { entry ->
+            val give = entry.arguments?.getBoolean("give") != false
+            val store: com.yaz.contacts.data.contacts.ContactStore = koinInject()
+            // The user's own card as it goes to the other phone, read once.
+            val card by androidx.compose.runtime.produceState<String?>(null) {
+                if (give) value = store.me()?.let { store.details(it.id) }?.let { com.yaz.contacts.core.vcard.VCard.short(it, look = true) }
+            }
+            com.yaz.contacts.feature.nfc.TapScreen(card = card, onBack = ::back, onCard = { text ->
+                nav.popBackStack()
+                nav.navigate("import?uri=" + Uri.encode("text:" + drafts.put(text)))
+            })
         }
         composable(Routes.SCAN) {
             com.yaz.contacts.feature.scan.ScanScreen(onBack = ::back, onCard = { text ->
@@ -281,7 +296,7 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
 
 /** The list, the way to a new contact floating over it, the first launch page until closed. */
 @Composable
-private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) -> Unit, onScan: () -> Unit, onPoster: (Long) -> Unit, onOpenSettings: () -> Unit, onOpenTidy: () -> Unit, onAdd: () -> Unit) {
+private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) -> Unit, onScan: () -> Unit, onPoster: (Long) -> Unit, onTap: () -> Unit, onOpenSettings: () -> Unit, onOpenTidy: () -> Unit, onAdd: () -> Unit) {
     val store: SettingsStore = koinInject()
     var showWelcome by rememberSaveable { mutableStateOf(!store.current.welcomeSeen) }
     val settings by store.settings.collectAsState()
@@ -307,7 +322,7 @@ private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) ->
                             message = "Their page opens here.",
                             icon = AppIcons.Person,
                             modifier = Modifier.fillMaxSize()
-                        ) else ContactScreen(id = id, onBack = { picked = null }, onEdit = onEdit, onDeleted = { picked = null }, onMoved = { picked = it }, onScan = onScan, onPoster = onPoster)
+                        ) else ContactScreen(id = id, onBack = { picked = null }, onEdit = onEdit, onDeleted = { picked = null }, onMoved = { picked = it }, onScan = onScan, onPoster = onPoster, onTap = onTap)
                     }
                 }
             }

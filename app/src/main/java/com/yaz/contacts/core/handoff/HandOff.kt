@@ -38,6 +38,8 @@ sealed interface HandOff {
     data class Pick(val kind: PickKind) : HandOff
     /** A contact card to read and save. */
     data class Import(val uri: Uri) : HandOff
+    /** A card read by touching another phone or a tag. */
+    data class ImportText(val text: String) : HandOff
     /** The contact with this number or address, or a new one with it. */
     data class ShowOrCreate(val scheme: String, val value: String, val name: String?) : HandOff
 }
@@ -70,6 +72,7 @@ object HandOffs {
             Intent.ACTION_INSERT -> HandOff.Insert(prefill(intent), accountOf(intent))
             Intent.ACTION_INSERT_OR_EDIT -> HandOff.InsertOrEdit(prefill(intent))
             Intent.ACTION_PICK, Intent.ACTION_GET_CONTENT -> HandOff.Pick(pickKind(intent.type ?: intent.data?.toString().orEmpty()))
+            android.nfc.NfcAdapter.ACTION_NDEF_DISCOVERED -> nfcCard(intent)?.let { HandOff.ImportText(it) }
             SHOW_OR_CREATE -> {
                 val data = intent.data ?: return null
                 val scheme = data.scheme ?: return null
@@ -81,6 +84,15 @@ object HandOffs {
             else -> null
         }
     }
+
+    /** The contact card in a tag's NDEF records, bounded. */
+    fun nfcCard(intent: Intent): String? = runCatching {
+        val messages = if (Build.VERSION.SDK_INT >= 33) intent.getParcelableArrayExtra(android.nfc.NfcAdapter.EXTRA_NDEF_MESSAGES, android.nfc.NdefMessage::class.java)
+        else @Suppress("DEPRECATION") intent.getParcelableArrayExtra(android.nfc.NfcAdapter.EXTRA_NDEF_MESSAGES)?.filterIsInstance<android.nfc.NdefMessage>()?.toTypedArray()
+        messages.orEmpty().filterIsInstance<android.nfc.NdefMessage>().flatMap { it.records.toList() }
+            .firstOrNull { it.toMimeType() in setOf("text/vcard", "text/x-vcard") }
+            ?.payload?.takeIf { it.size <= 64 * 1024 }?.decodeToString()
+    }.getOrNull()
 
     @Suppress("FunctionName")
     private fun Import(uri: Uri) = HandOff.Import(uri)

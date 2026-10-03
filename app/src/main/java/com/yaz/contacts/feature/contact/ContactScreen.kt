@@ -98,7 +98,7 @@ import org.koin.compose.koinInject
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDeleted: () -> Unit, onMoved: (Long) -> Unit = { onDeleted() }, onScan: () -> Unit = {}, onPoster: (Long) -> Unit = {}) {
+fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDeleted: () -> Unit, onMoved: (Long) -> Unit = { onDeleted() }, onScan: () -> Unit = {}, onPoster: (Long) -> Unit = {}, onTap: () -> Unit = {}) {
     val store: ContactStore = koinInject()
     val writer: ContactWriter = koinInject()
     val trash: Trash = koinInject()
@@ -173,7 +173,7 @@ fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDelete
                     Verified(d)
                     SharedCard(d)
                     Spacer(Modifier.height(20.dp))
-                    Actions(d, onQr = { showQr = true }, onScan = onScan)
+                    Actions(d, onQr = { showQr = true }, onScan = onScan, onTap = onTap)
                     Spacer(Modifier.height(16.dp))
                     Fields(d)
                     if (!android.provider.ContactsContract.isProfileId(d.id)) OnThisPhone(
@@ -356,13 +356,14 @@ private fun SharedCard(d: Details) {
 /** The ways to reach them, each a round pane of glass, wrapping onto a second line on a narrow screen. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Actions(d: Details, onQr: () -> Unit, onScan: () -> Unit) {
+private fun Actions(d: Details, onQr: () -> Unit, onScan: () -> Unit, onTap: () -> Unit) {
     // The user's own card: only sharing it makes sense.
     if (android.provider.ContactsContract.isProfileId(d.id)) {
         val context = LocalContext.current
         EvenRows(minSlot = 64.dp, modifier = Modifier.widthIn(max = 640.dp)) {
-            // Show mine, scan theirs: two phones swap cards face to face.
-            ActionTile(AppIcons.QrCode, "My QR code", accent = true) { onQr() }
+            // Touch phones, show mine, scan theirs: two phones swap cards face to face.
+            if (context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_NFC_HOST_CARD_EMULATION)) ActionTile(AppIcons.Nfc, "Touch phones", accent = true) { onTap() }
+            ActionTile(AppIcons.QrCode, "My QR code") { onQr() }
             ActionTile(AppIcons.PhotoCamera, "Scan theirs") { onScan() }
             ActionTile(AppIcons.Share, "Share") { Reach.share(context, listOf(d.lookup), d.display) }
         }

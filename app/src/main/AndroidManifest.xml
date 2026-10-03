@@ -23,6 +23,10 @@
     <!-- Reads another phone's contact QR code; asked the first time, the picture never leaves the phone. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- Sharing a card by touching another phone, and reading theirs. -->
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-feature android:name="android.hardware.nfc" android:required="false" />
+    <uses-feature android:name="android.hardware.nfc.hce" android:required="false" />
     <!-- Lets the user feel a person's vibration while choosing it. -->
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Hides other apps' floating windows over the editor and the delete
@@ -172,6 +176,13 @@
                 <data android:mimeType="text/x-vcard" />
                 <data android:mimeType="text/directory" />
             </intent-filter>
+            <!-- A card read from another phone or a tag by touching it. -->
+            <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/vcard" />
+                <data android:mimeType="text/x-vcard" />
+            </intent-filter>
             <!-- A number or an address: its contact when there is one, else a new one. -->
             <intent-filter>
                 <action android:name="com.android.contacts.action.SHOW_OR_CREATE_CONTACT" />
@@ -189,6 +200,20 @@
             android:authorities="${applicationId}.cards"
             android:exported="true"
             android:permission="${applicationId}.permission.CARDS" />
+
+        <!-- The user's card as an NFC tag while the sharing screen is open.
+             Only Android's NFC service may bind it. -->
+        <service
+            android:name=".core.nfc.CardTagService"
+            android:exported="true"
+            android:permission="android.permission.BIND_NFC_SERVICE">
+            <intent-filter>
+                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.nfc.cardemulation.host_apdu_service"
+                android:resource="@xml/card_tag" />
+        </service>
 
         <!-- Pictures from outside are decoded here, in a process of its own
              with no permission, no files and no network. -->

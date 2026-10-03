@@ -345,7 +345,7 @@ object VCard {
      * A short card (vCard 3.0) of what reaches someone, for a QR code: name,
      * company, numbers, emails, websites; no photo, no notes.
      */
-    fun short(d: Details): String = buildString {
+    fun short(d: Details, look: Boolean = false): String = buildString {
         fun esc(s: String) = s.replace("\\", "\\\\").replace("\n", "\\n").replace(",", "\\,").replace(";", "\\;")
         append("BEGIN:VCARD\r\nVERSION:3.0\r\n")
         val n = d.name
@@ -358,6 +358,8 @@ object VCard {
         d.phones.forEach { append("TEL;TYPE=${phoneType(it.kind)}:${it.value.filter { c -> c.isDigit() || c == '+' }}\r\n") }
         d.emails.forEach { append("EMAIL;TYPE=INTERNET:${esc(it.value)}\r\n") }
         d.websites.forEach { append("URL:${esc(it.value)}\r\n") }
+        // The colour, monogram and poster the person chose, for the phone apps that read them.
+        if (look && !d.look.isDefault) append("X-YAZ-LOOK:${esc(com.yaz.contacts.core.contacts.LookCodec.encode(d.look.copy(vibration = "", tone = "", bypass = false)))}\r\n")
         append("END:VCARD\r\n")
     }
 

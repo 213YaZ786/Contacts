@@ -79,6 +79,7 @@ class HandOffActivity : ComponentActivity() {
         is HandOff.InsertOrEdit -> Routes.choose(drafts.put(request.prefill))
         is HandOff.Pick -> Routes.pick(request.kind.name)
         is HandOff.Import -> Routes.import(request.uri)
+        is HandOff.ImportText -> "import?uri=" + android.net.Uri.encode("text:" + drafts.put(request.text))
         is HandOff.ShowOrCreate -> store.findBy(request.scheme, request.value)?.let { Routes.contact(it) } ?: run {
             val name = request.name?.let { HandOffs.split(it) }
             val prefill = if (request.scheme == "tel") Details(phones = listOf(Labelled(kind = android.provider.ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE, value = request.value)))

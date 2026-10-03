@@ -16,6 +16,9 @@ object Routes {
     const val UNDO = "undo"
     const val SCAN = "scan"
     const val POSTER = "poster/{id}"
+    const val TAP = "tap?give={give}"
+
+    fun tap(give: Boolean) = "tap?give=$give"
 
     fun poster(id: Long) = "poster/$id"
 
