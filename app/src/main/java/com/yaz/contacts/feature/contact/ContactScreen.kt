@@ -97,7 +97,7 @@ import org.koin.compose.koinInject
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDeleted: () -> Unit, onMoved: (Long) -> Unit = { onDeleted() }, onScan: () -> Unit = {}) {
+fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDeleted: () -> Unit, onMoved: (Long) -> Unit = { onDeleted() }, onScan: () -> Unit = {}, onPoster: (Long) -> Unit = {}) {
     val store: ContactStore = koinInject()
     val writer: ContactWriter = koinInject()
     val trash: Trash = koinInject()
@@ -190,6 +190,7 @@ fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDelete
                             scope.launch { writer.setVoicemail(id, on) }
                         },
                         onColour = { choosingColour = true },
+                        onPoster = { onPoster(id) },
                         onVibration = { choosingVibration = true },
                         onTone = {
                             tonePicker.launch(
@@ -445,7 +446,7 @@ private fun Fields(d: Details) {
 
 /** What the phone does when they call or write, kept in their contact for Dialer and SMS. */
 @Composable
-private fun OnThisPhone(d: Details, onRingtone: () -> Unit, onVoicemail: (Boolean) -> Unit, onColour: () -> Unit, onVibration: () -> Unit, onTone: () -> Unit, onBypass: (Boolean) -> Unit) {
+private fun OnThisPhone(d: Details, onRingtone: () -> Unit, onVoicemail: (Boolean) -> Unit, onColour: () -> Unit, onPoster: () -> Unit, onVibration: () -> Unit, onTone: () -> Unit, onBypass: (Boolean) -> Unit) {
     val context = LocalContext.current
     val ringtone by produceState("Default", d.ringtone) {
         value = when (val r = d.ringtone) {
@@ -459,6 +460,7 @@ private fun OnThisPhone(d: Details, onRingtone: () -> Unit, onVoicemail: (Boolea
     }
     if (d.readOnly) return
     InfoZone("On this phone") {
+        InfoRow(AppIcons.Photo, "Poster", "How they fill the screen when they call", onClick = onPoster)
         InfoRow(AppIcons.Ringtone, ringtone, "Ringtone", onClick = onRingtone)
         InfoRow(AppIcons.Message, tone, "Sound of their messages", onClick = onTone)
         InfoRow(AppIcons.Vibration, d.look.vibration.ifBlank { "As the phone" }, "Vibration for their calls and messages", onClick = onVibration)

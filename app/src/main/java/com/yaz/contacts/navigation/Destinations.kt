@@ -15,6 +15,9 @@ object Routes {
     const val LABEL = "label/{id}"
     const val UNDO = "undo"
     const val SCAN = "scan"
+    const val POSTER = "poster/{id}"
+
+    fun poster(id: Long) = "poster/$id"
 
     fun contact(id: Long) = "contact/$id"
 

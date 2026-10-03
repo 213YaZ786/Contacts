@@ -134,6 +134,7 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                 onMakeMe = { nav.navigate(Routes.edit(me = true)) },
                 onEdit = { nav.navigate(Routes.edit(it)) },
                 onScan = { nav.navigate(Routes.SCAN) },
+                onPoster = { nav.navigate(Routes.poster(it)) },
                 onOpenSettings = { nav.navigate(Routes.SETTINGS) },
                 onOpenTidy = { nav.navigate(Routes.TIDY) },
                 onAdd = { nav.navigate(Routes.edit()) }
@@ -148,6 +149,7 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                     onEdit = { nav.navigate(Routes.edit(it)) },
                     onDeleted = ::back,
                     onScan = { nav.navigate(Routes.SCAN) },
+                    onPoster = { nav.navigate(Routes.poster(it)) },
                     onMoved = { moved ->
                         nav.popBackStack()
                         nav.navigate(Routes.contact(moved))
@@ -242,6 +244,10 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                 )
             }
         }
+        composable(Routes.POSTER, arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
+            val id = entry.arguments?.getLong("id") ?: return@composable
+            com.yaz.contacts.feature.contact.PosterScreen(id, onBack = ::back)
+        }
         composable(Routes.SCAN) {
             com.yaz.contacts.feature.scan.ScanScreen(onBack = ::back, onCard = { text ->
                 nav.popBackStack()
@@ -262,7 +268,7 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
 
 /** The list, the way to a new contact floating over it, the first launch page until closed. */
 @Composable
-private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) -> Unit, onScan: () -> Unit, onOpenSettings: () -> Unit, onOpenTidy: () -> Unit, onAdd: () -> Unit) {
+private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) -> Unit, onScan: () -> Unit, onPoster: (Long) -> Unit, onOpenSettings: () -> Unit, onOpenTidy: () -> Unit, onAdd: () -> Unit) {
     val store: SettingsStore = koinInject()
     var showWelcome by rememberSaveable { mutableStateOf(!store.current.welcomeSeen) }
     val settings by store.settings.collectAsState()
@@ -288,7 +294,7 @@ private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) ->
                             message = "Their page opens here.",
                             icon = AppIcons.Person,
                             modifier = Modifier.fillMaxSize()
-                        ) else ContactScreen(id = id, onBack = { picked = null }, onEdit = onEdit, onDeleted = { picked = null }, onMoved = { picked = it }, onScan = onScan)
+                        ) else ContactScreen(id = id, onBack = { picked = null }, onEdit = onEdit, onDeleted = { picked = null }, onMoved = { picked = it }, onScan = onScan, onPoster = onPoster)
                     }
                 }
             }
