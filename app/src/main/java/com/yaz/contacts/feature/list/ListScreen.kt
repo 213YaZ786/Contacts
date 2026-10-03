@@ -182,7 +182,7 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
             title = when (filter) {
                 Filter.All -> "Contacts"
                 Filter.Favorites -> "Favorites"
-                Filter.Recent -> "Recent"
+                Filter.Recent -> "For you"
                 Filter.Private -> "Private"
                 is Filter.Label -> groups.firstOrNull { it.id == filter.id }?.title ?: "Contacts"
             },
@@ -196,7 +196,7 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
                     val position = if (specialFilter != null) -1f else pager.currentPage + pager.currentPageOffsetFraction
                     com.yaz.contacts.ui.component.FloatingDock(
                         items = listOf(
-                            com.yaz.contacts.ui.component.DockItem(AppIcons.History, "Recent"),
+                            com.yaz.contacts.ui.component.DockItem(AppIcons.AutoAwesome, "For you"),
                             com.yaz.contacts.ui.component.DockItem(AppIcons.Contacts, "All"),
                             com.yaz.contacts.ui.component.DockItem(AppIcons.Star, "Favorites")
                         ),
@@ -266,6 +266,16 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
                         icon = AppIcons.PersonAdd,
                         modifier = Modifier.fillMaxSize().padding(padding)
                     )
+                    f == Filter.Recent && query.isBlank() -> ForYouPage(
+                        people = people,
+                        lately = list,
+                        me = me,
+                        onMe = { me?.let { onOpen(it.id) } ?: onMakeMe() },
+                        lastFirst = settings.lastNameFirst,
+                        padding = padding,
+                        onOpen = onOpen
+                    )
+                    f == Filter.Favorites && query.isBlank() && list.isNotEmpty() -> FavoriteCards(list, padding, onOpen = onOpen, onLongPress = { c -> onOpen(c.id) })
                     list.isEmpty() -> EmptyZone(
                         title = if (query.isNotBlank()) "No one found" else when (f) {
                             Filter.Recent -> "No one lately"
@@ -283,11 +293,12 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
                     )
                     else -> PeopleList(
                         shown = list,
-                        favorites = if (query.isBlank() && f == Filter.All) favorites else emptyList(),
-                        birthdays = if (query.isBlank() && f == Filter.All) Contacts.birthdays(people, java.time.LocalDate.now()) else emptyList(),
+                        // Everyone, plain: the card, birthdays and the rest are in For you, favourites on their own tab.
+                        favorites = emptyList(),
+                        birthdays = emptyList(),
                         grouped = f != Filter.Recent,
                         lastFirst = settings.lastNameFirst,
-                        me = if (query.isBlank() && f == Filter.All && !selecting) (me ?: NO_CARD) else null,
+                        me = null,
                         onMe = { me?.let { onOpen(it.id) } ?: onMakeMe() },
                         order = order,
                         padding = padding,
@@ -434,7 +445,7 @@ private fun PeopleList(
                     onOpen = onMe
                 )
             }
-            if (me != null) item(key = "shared") { SharedWithYou(shown, onOpen) }
+            if (me != null) item(key = "shared") { SharedWithYouCard(shown, onOpen) }
             if (grouped && me != null) {
                 item(key = "touch") { KeepInTouch(shown, onOpen) }
                 item(key = "often") {
@@ -443,7 +454,7 @@ private fun PeopleList(
                 }
             }
             if (birthdays.isNotEmpty()) {
-                item(key = "bday") { BirthdayCard(birthdays, onOpen) }
+                item(key = "bday") { BirthdayCardShown(birthdays, onOpen) }
             }
             if (favorites.isNotEmpty()) {
                 item(key = "fav/title") { ListHeading("Favorites") }
@@ -539,7 +550,7 @@ private fun ContactMenu(menu: com.yaz.contacts.ui.component.PillMenuState, c: Co
  * new contact to save.
  */
 @Composable
-private fun SharedWithYou(people: List<Contact>, onOpen: (Long) -> Unit) {
+internal fun SharedWithYouCard(people: List<Contact>, onOpen: (Long) -> Unit) {
     val offers: com.yaz.contacts.data.contacts.Offers = koinInject()
     val all by offers.offers.collectAsState()
     if (all.isEmpty()) return
@@ -589,7 +600,7 @@ val LocalImport = androidx.compose.runtime.staticCompositionLocalOf<(Long) -> Un
  * through the messaging app, a call through the phone app.
  */
 @Composable
-private fun BirthdayCard(birthdays: List<Triple<Contact, Long, Int?>>, onOpen: (Long) -> Unit) {
+internal fun BirthdayCardShown(birthdays: List<Triple<Contact, Long, Int?>>, onOpen: (Long) -> Unit) {
     val context = LocalContext.current
     com.yaz.contacts.ui.component.ZoneSurface(
         shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
@@ -634,7 +645,7 @@ private fun BirthdayCard(birthdays: List<Triple<Contact, Long, Int?>>, onOpen: (
 }
 
 /** Stands for the user's card before they made one. */
-private val NO_CARD = Contact(-1L, "", "", "", null, false)
+internal val NO_CARD = Contact(-1L, "", "", "", null, false)
 
 /** From this many contacts, the letters stand at the edge of the list. */
 private const val RAIL_FROM = 12
