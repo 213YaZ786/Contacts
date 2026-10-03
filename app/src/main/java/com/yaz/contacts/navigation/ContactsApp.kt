@@ -139,8 +139,14 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
         modifier = Modifier.fillMaxSize()
     ) {
         composable(Routes.LIST) {
+            val saveNumber = remember {
+                androidx.compose.runtime.mutableStateOf<((String) -> Unit)?>({ number ->
+                    nav.navigate(Routes.choose(drafts.put(Details(phones = listOf(com.yaz.contacts.core.contacts.Labelled(kind = android.provider.ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE, value = number))))))
+                })
+            }
             androidx.compose.runtime.CompositionLocalProvider(
-                com.yaz.contacts.feature.list.LocalImport provides { held -> nav.navigate("import?uri=" + Uri.encode("text:$held")) }
+                com.yaz.contacts.feature.list.LocalImport provides { held -> nav.navigate("import?uri=" + Uri.encode("text:$held")) },
+                com.yaz.contacts.feature.list.LocalSave provides saveNumber
             ) {
             Main(
                 onOpen = { nav.navigate(Routes.contact(it)) },

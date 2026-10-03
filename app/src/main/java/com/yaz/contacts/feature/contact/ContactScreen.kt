@@ -599,6 +599,39 @@ private fun OnThisPhone(d: Details, onRingtone: () -> Unit, onVoicemail: (Boolea
     if (d.readOnly) return
     InfoZone("On this phone") {
         InfoRow(AppIcons.Photo, "Poster", "How they fill the screen when they call", onClick = onPoster)
+        // Keep in touch: a reminder on the list when too long has passed since a call or a message.
+        var choosingEvery by remember { mutableStateOf(false) }
+        val writer: ContactWriter = koinInject()
+        val scope = rememberCoroutineScope()
+        InfoRow(
+            AppIcons.History,
+            when (d.look.every) { 0 -> "Off"; 7 -> "Every week"; 14 -> "Every 2 weeks"; 30 -> "Every month"; 90 -> "Every 3 months"; else -> "Every ${d.look.every} days" },
+            "Keep in touch",
+            onClick = { choosingEvery = true }
+        )
+        if (choosingEvery) com.yaz.contacts.ui.component.ZoneAlertDialog(
+            onDismissRequest = { choosingEvery = false },
+            icon = { Icon(AppIcons.History, null) },
+            title = { Text("Keep in touch") },
+            text = {
+                Column {
+                    Text("Contacts reminds you when you open it, from the calls and messages of Dialer and SMS.", style = MaterialTheme.typography.bodySmall)
+                    listOf(0 to "Off", 7 to "Every week", 14 to "Every 2 weeks", 30 to "Every month", 90 to "Every 3 months").forEach { (days, label) ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).combinedClickableCompat {
+                                choosingEvery = false
+                                scope.launch { writer.save(d, d.copy(look = d.look.copy(every = days)), null) }
+                            }.padding(vertical = 8.dp)
+                        ) {
+                            androidx.compose.material3.RadioButton(selected = d.look.every == days, onClick = null)
+                            Text(label, modifier = Modifier.padding(start = 12.dp))
+                        }
+                    }
+                }
+            },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { choosingEvery = false }) { Text("Cancel") } }
+        )
         InfoRow(AppIcons.Ringtone, ringtone, "Ringtone", onClick = onRingtone)
         InfoRow(AppIcons.Message, tone, "Sound of their messages", onClick = onTone)
         InfoRow(AppIcons.Vibration, d.look.vibration.ifBlank { "As the phone" }, "Vibration for their calls and messages", onClick = onVibration)

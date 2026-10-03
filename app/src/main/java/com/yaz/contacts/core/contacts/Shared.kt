@@ -32,7 +32,7 @@ object Shared {
         phones = base.phones + card.phones.filter { p -> base.phones.none { digits(it.value) == digits(p.value) } }.map { it.copy(rowId = 0, rawId = 0) },
         emails = base.emails + card.emails.filter { e -> base.emails.none { it.value.equals(e.value, true) } }.map { it.copy(rowId = 0, rawId = 0) },
         websites = base.websites + card.websites.filter { w -> base.websites.none { it.value == w.value } }.map { it.copy(rowId = 0, rawId = 0) },
-        look = if (card.look.isDefault) base.look else theirs(card.look).copy(vibration = base.look.vibration, tone = base.look.tone, bypass = base.look.bypass)
+        look = if (card.look.isDefault) base.look else theirs(card.look).copy(vibration = base.look.vibration, tone = base.look.tone, bypass = base.look.bypass, every = base.look.every)
     )
 
     private fun digits(s: String) = s.filter(Char::isDigit).takeLast(9)

@@ -52,7 +52,9 @@ data class Settings(
     /** Contacts opens only after the fingerprint, the face or the phone's PIN. */
     val lock: Boolean = false,
     /** How long the app stays open after leaving it, in seconds (0: locked at once). */
-    val lockAfterSeconds: Int = 60
+    val lockAfterSeconds: Int = 60,
+    /** Numbers offered as "talked with often" that the user waved away. */
+    val notToSave: Set<String> = emptySet()
 )
 
 /**

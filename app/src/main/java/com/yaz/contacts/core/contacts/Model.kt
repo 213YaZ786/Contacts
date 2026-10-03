@@ -192,7 +192,9 @@ data class Look(
     val tone: String = "",
     /** Their monogram when there is no photo: one or two letters, in one of MONOGRAM_FONTS. */
     val letters: String = "",
-    val font: String = ""
+    val font: String = "",
+    /** Keep in touch: talk at least every so many days (0: no reminder). The user's own, never shared. */
+    val every: Int = 0
 ) {
     /** As the phone apps' avatars read it. */
     fun forAvatar() = com.yaz.contacts.core.dial.ContactLook.Look(

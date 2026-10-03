@@ -341,6 +341,13 @@ private fun PeopleList(
                 )
             }
             item(key = "shared") { SharedWithYou(shown, onOpen) }
+            if (grouped && me != null) {
+                item(key = "touch") { KeepInTouch(shown, onOpen) }
+                item(key = "often") {
+                    val save = LocalSave.current
+                    TalkedOften(shown, onSave = { number -> save.value?.invoke(number) })
+                }
+            }
             if (birthdays.isNotEmpty()) {
                 item(key = "bday") { BirthdayCard(birthdays, onOpen) }
             }
@@ -388,7 +395,7 @@ private fun PeopleList(
             }
         }
         if (rail) {
-            val favCount = 1 + (if (favorites.isNotEmpty()) 2 else 0) + (if (birthdays.isNotEmpty()) 1 else 0) + (if (me != null) 1 else 0)
+            val favCount = 1 + (if (grouped && me != null) 2 else 0) + (if (favorites.isNotEmpty()) 2 else 0) + (if (birthdays.isNotEmpty()) 1 else 0) + (if (me != null) 1 else 0)
             LetterRail(
                 letters = groups.keys.toList(),
                 onLetter = { letter ->
@@ -475,6 +482,9 @@ private fun SharedWithYou(people: List<Contact>, onOpen: (Long) -> Unit) {
         }
     }
 }
+
+/** Saves a number as a new contact (or into one); given by the app's navigation. */
+val LocalSave = androidx.compose.runtime.staticCompositionLocalOf<androidx.compose.runtime.MutableState<((String) -> Unit)?>> { androidx.compose.runtime.mutableStateOf(null) }
 
 /** Opens the import screen for cards held in Drafts; given by the app's navigation. */
 val LocalImport = androidx.compose.runtime.staticCompositionLocalOf<(Long) -> Unit> { {} }

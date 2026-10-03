@@ -28,7 +28,8 @@ object LookCodec {
         val bypass: Boolean = false,
         val tone: String = "",
         val letters: String = "",
-        val font: String = ""
+        val font: String = "",
+        val every: Int = 0
     )
 
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = false }
@@ -47,7 +48,8 @@ object LookCodec {
             bypass = look.bypass,
             tone = look.tone,
             letters = look.letters,
-            font = look.font
+            font = look.font,
+            every = look.every
         )
     )
 
@@ -67,7 +69,8 @@ object LookCodec {
             bypass = s.bypass,
             tone = s.tone.takeIf { it.startsWith("content://media/") || it.startsWith("android.resource://") } ?: "",
             letters = s.letters.filter { it.isLetterOrDigit() }.take(2),
-            font = s.font.takeIf { it in MONOGRAM_FONTS } ?: ""
+            font = s.font.takeIf { it in MONOGRAM_FONTS } ?: "",
+            every = s.every.coerceIn(0, 366)
         )
     }
 

@@ -364,7 +364,7 @@ object VCard {
         // The colour, monogram and poster the person chose, for the phone apps that read them.
         // The encrypted chat's invite, for a card given in person.
         chat?.takeIf { com.yaz.contacts.core.handoff.ChatLink.valid(it) }?.let { append("X-YAZ-CHAT:${esc(it)}\r\n") }
-        if (look && !d.look.isDefault) append("X-YAZ-LOOK:${esc(com.yaz.contacts.core.contacts.LookCodec.encode(d.look.copy(vibration = "", tone = "", bypass = false)))}\r\n")
+        if (look && !d.look.isDefault) append("X-YAZ-LOOK:${esc(com.yaz.contacts.core.contacts.LookCodec.encode(d.look.copy(vibration = "", tone = "", bypass = false, every = 0)))}\r\n")
         append("END:VCARD\r\n")
     }
 
