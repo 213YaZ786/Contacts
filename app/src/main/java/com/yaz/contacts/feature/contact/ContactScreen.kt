@@ -476,8 +476,8 @@ private fun Actions(d: Details, onQr: () -> Unit, onScan: () -> Unit, onTap: () 
     if (android.provider.ContactsContract.isProfileId(d.id)) {
         val context = LocalContext.current
         EvenRows(minSlot = 96.dp, modifier = Modifier.widthIn(max = 640.dp)) {
-            // Touch phones, show mine, scan theirs: two phones swap cards face to face.
-            if (com.yaz.contacts.BuildConfig.DEBUG || context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_NFC_HOST_CARD_EMULATION)) ActionTile(AppIcons.Nfc, "Touch phones", accent = true) { onTap() }
+            // Tap to share (NFC), show mine, scan theirs: two phones swap cards face to face.
+            if (com.yaz.contacts.BuildConfig.DEBUG || context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_NFC_HOST_CARD_EMULATION)) ActionTile(AppIcons.Nfc, "Tap to share", accent = true) { onTap() }
             ActionTile(AppIcons.QrCode, "My QR code") { onQr() }
             ActionTile(AppIcons.PhotoCamera, "Scan theirs") { onScan() }
             ActionTile(AppIcons.Share, "Share") { Reach.share(context, listOf(d.lookup), d.display) }
@@ -511,7 +511,7 @@ private fun Actions(d: Details, onQr: () -> Unit, onScan: () -> Unit, onTap: () 
         ActionTile(AppIcons.Share, "Share") { sharing = true }
         // Their card to a phone right here: by a touch, or shown as a QR code.
         ActionTile(AppIcons.QrCode, "QR code") { onQr() }
-        if (com.yaz.contacts.BuildConfig.DEBUG || context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_NFC_HOST_CARD_EMULATION)) ActionTile(AppIcons.Nfc, "Touch phones") { onGive() }
+        if (com.yaz.contacts.BuildConfig.DEBUG || context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_NFC_HOST_CARD_EMULATION)) ActionTile(AppIcons.Nfc, "Tap to share") { onGive() }
     }
     if (sharing) {
         com.yaz.contacts.ui.component.ZoneAlertDialog(

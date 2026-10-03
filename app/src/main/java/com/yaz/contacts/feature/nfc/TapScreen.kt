@@ -134,7 +134,7 @@ fun TapScreen(give: Boolean, own: Boolean = true, me: Details?, mePhoto: ImageBi
 
     FloatingFrame(
         bottom = 24.dp,
-        top = { FloatingTop(title = "Touch phones", leading = { FloatingAction(AppIcons.ArrowBack, "Back", onBack) }) }
+        top = { FloatingTop(title = "Tap to share", leading = { FloatingAction(AppIcons.ArrowBack, "Back", onBack) }) }
     ) { padding ->
         val demo = BuildConfig.DEBUG && adapter == null
         when {
