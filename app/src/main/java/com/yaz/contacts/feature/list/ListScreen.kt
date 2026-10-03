@@ -169,6 +169,8 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
     androidx.activity.compose.BackHandler(enabled = selecting) { selectedIds = emptyList() }
     var labelling by remember { mutableStateOf(false) }
     var choosingView by remember { mutableStateOf(false) }
+    // People saved twice: a red dot on Tidy up until they are merged or set apart.
+    val tidyWaiting = remember(all) { com.yaz.contacts.core.contacts.Duplicates.find(all.orEmpty()).isNotEmpty() }
     // Back from a view of its own to the tabs, then from a side tab to everyone.
     androidx.activity.compose.BackHandler(enabled = !selecting && (specialFilter != null || pager.currentPage != 1)) {
         if (specialFilter != null) special = "" else scope.launch { pager.animateScrollToPage(1) }
@@ -190,6 +192,7 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
             onTitle = if (hidden.isNotEmpty() || usedLabels.isNotEmpty() || specialFilter != null) ({ choosingView = true }) else null,
             onOpenSettings = onOpenSettings,
             onOpenTidy = onOpenTidy,
+            tidyWaiting = tidyWaiting,
             // In glass over the list, as Dialer's tabs: recent, everyone, favourites.
             overlay = {
                 if (canRead && people.isNotEmpty() && !selecting) {
