@@ -19,7 +19,7 @@ import java.nio.charset.Charset
 import java.util.Base64
 
 /** One person read from a card: their fields, their photo, their labels by name. */
-data class Card(val details: Details, val photo: ByteArray?, val categories: List<String>) {
+data class Card(val details: Details, val photo: ByteArray?, val categories: List<String>, val chat: String? = null) {
     val title: String get() = details.name.display().ifBlank { details.organization.company }.ifBlank { details.phones.firstOrNull()?.value ?: details.emails.firstOrNull()?.value ?: "" }
 }
 
@@ -216,6 +216,7 @@ object VCard {
         val sips = mutableListOf<Labelled>()
         val categories = mutableListOf<String>()
         var look: com.yaz.contacts.core.contacts.Look? = null
+        var chat: String? = null
 
         fun clip(s: String, max: Int = 300) = s.filter { it == '\n' || !it.isISOControl() }.trim().take(max)
 
@@ -270,6 +271,8 @@ object VCard {
                 "CATEGORIES" -> categories += unescape(p.value).split(',').map { clip(it, 60) }.filter { it.isNotBlank() && it.lowercase() != "mycontacts" && it.lowercase() != "starred" }
                 "PHOTO" -> if (photo == null) photo = photoOf(p)
                 // The look a person chose for themselves (their colour, monogram, poster), as the phone apps share it.
+                // The encrypted chat's invite of the person, given in person by touching phones.
+                "X-YAZ-CHAT" -> chat = unescape(p.value).trim().takeIf { com.yaz.contacts.core.handoff.ChatLink.valid(it) }
                 "X-YAZ-LOOK" -> look = com.yaz.contacts.core.contacts.LookCodec.decode(unescape(p.value)).takeIf { !it.isDefault }
                 // Android writes its own kinds as X-ANDROID-CUSTOM:mimetype;value;...
                 "X-ANDROID-CUSTOM" -> {
@@ -298,7 +301,7 @@ object VCard {
             look = look ?: com.yaz.contacts.core.contacts.Look()
         )
         val empty = name.isEmpty && org.isEmpty && phones.isEmpty() && emails.isEmpty() && addresses.isEmpty()
-        return if (empty) null else Card(details, photo, categories.distinct().take(ROWS))
+        return if (empty) null else Card(details, photo, categories.distinct().take(ROWS), chat)
     }
 
     private fun splitName(full: String): Name {
@@ -345,7 +348,7 @@ object VCard {
      * A short card (vCard 3.0) of what reaches someone, for a QR code: name,
      * company, numbers, emails, websites; no photo, no notes.
      */
-    fun short(d: Details, look: Boolean = false): String = buildString {
+    fun short(d: Details, look: Boolean = false, chat: String? = null): String = buildString {
         fun esc(s: String) = s.replace("\\", "\\\\").replace("\n", "\\n").replace(",", "\\,").replace(";", "\\;")
         append("BEGIN:VCARD\r\nVERSION:3.0\r\n")
         val n = d.name
@@ -359,6 +362,8 @@ object VCard {
         d.emails.forEach { append("EMAIL;TYPE=INTERNET:${esc(it.value)}\r\n") }
         d.websites.forEach { append("URL:${esc(it.value)}\r\n") }
         // The colour, monogram and poster the person chose, for the phone apps that read them.
+        // The encrypted chat's invite, for a card given in person.
+        chat?.takeIf { com.yaz.contacts.core.handoff.ChatLink.valid(it) }?.let { append("X-YAZ-CHAT:${esc(it)}\r\n") }
         if (look && !d.look.isDefault) append("X-YAZ-LOOK:${esc(com.yaz.contacts.core.contacts.LookCodec.encode(d.look.copy(vibration = "", tone = "", bypass = false)))}\r\n")
         append("END:VCARD\r\n")
     }

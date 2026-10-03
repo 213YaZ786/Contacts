@@ -66,4 +66,13 @@ class VCardTest {
         val longField = "BEGIN:VCARD\nFN:" + "a".repeat(100_000) + " b\nEND:VCARD"
         assertTrue(VCard.parse(longField).single().details.name.given.length <= 300)
     }
+
+    @Test
+    fun theChatInviteGoesAndComesBackOthersAreIgnored() {
+        val link = "https://i.delta.chat/#ABCDEF0123456789&a=me%40relay.example&n=Yaz&i=xyz&s=abc"
+        val text = VCard.short(Details(display = "Yaz", name = Name(given = "Yaz")), chat = link)
+        assertEquals(link, VCard.parse(text).single().chat)
+        val other = "BEGIN:VCARD\r\nFN:X Y\r\nX-YAZ-CHAT:javascript:alert(1)\r\nEND:VCARD\r\n"
+        assertNull(VCard.parse(other).single().chat)
+    }
 }

@@ -8,7 +8,7 @@ object Routes {
     const val EDIT = "edit?id={id}&draft={draft}&me={me}"
     const val CHOOSE = "choose?draft={draft}"
     const val PICK = "pick/{kind}"
-    const val IMPORT = "import?uri={uri}"
+    const val IMPORT = "import?uri={uri}&person={person}"
     const val SETTINGS = "settings"
     const val TRASH = "trash"
     const val TIDY = "tidy"

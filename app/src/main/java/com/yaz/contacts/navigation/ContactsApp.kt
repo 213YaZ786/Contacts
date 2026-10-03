@@ -232,14 +232,23 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                 )
             }
         }
-        composable(Routes.IMPORT, arguments = listOf(navArgument("uri") { type = NavType.StringType; defaultValue = "" })) { entry ->
+        composable(
+            Routes.IMPORT,
+            arguments = listOf(
+                navArgument("uri") { type = NavType.StringType; defaultValue = "" },
+                navArgument("person") { type = NavType.BoolType; defaultValue = false }
+            )
+        ) { entry ->
             val raw = entry.arguments?.getString("uri").orEmpty()
+            // Given in person (touching phones, a QR code in front of the user): their chat invite may be used.
+            val person = entry.arguments?.getBoolean("person") == true
             // "text:N" is cards held in Drafts (the SIM's), anything else a file.
             val held = raw.removePrefix("text:").takeIf { raw.startsWith("text:") }?.toLongOrNull()?.let { drafts.peek(it) as? String }
             ReadableScroll {
                 ImportScreen(
                     source = if (held == null && raw.isNotBlank()) Uri.parse(raw) else null,
                     text = held,
+                    inPerson = person,
                     onClose = ::back,
                     onDone = { if (finish != null) finish(null) else back() }
                 )
@@ -282,16 +291,20 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                 }?.asImageBitmap()
             }
             val settingsStore: SettingsStore = koinInject()
-            val card = me?.let { com.yaz.contacts.core.vcard.VCard.short(com.yaz.contacts.core.contacts.Shareable.keep(it, settingsStore.current.keptBack), look = true) }
+            // The encrypted chat's invite of this phone goes in the card, when SMS has one.
+            val invite by androidx.compose.runtime.produceState<String?>(null) { if (give) value = com.yaz.contacts.core.handoff.ChatLink.invite(context) }
+            val card = me?.let { d ->
+                com.yaz.contacts.core.vcard.VCard.short(com.yaz.contacts.core.contacts.Shareable.keep(d, settingsStore.current.keptBack), look = true, chat = invite)
+            }
             com.yaz.contacts.feature.nfc.TapScreen(give = give, me = me, mePhoto = mePhoto, card = card, onBack = ::back, onCard = { text ->
                 nav.popBackStack()
-                nav.navigate("import?uri=" + Uri.encode("text:" + drafts.put(text)))
+                nav.navigate("import?uri=" + Uri.encode("text:" + drafts.put(text)) + "&person=true")
             })
         }
         composable(Routes.SCAN) {
             com.yaz.contacts.feature.scan.ScanScreen(onBack = ::back, onCard = { text ->
                 nav.popBackStack()
-                nav.navigate("import?uri=" + Uri.encode("text:" + drafts.put(text)))
+                nav.navigate("import?uri=" + Uri.encode("text:" + drafts.put(text)) + "&person=true")
             })
         }
         composable(Routes.UNDO) { ReadableScroll { com.yaz.contacts.feature.tidy.UndoScreen(onBack = ::back) } }

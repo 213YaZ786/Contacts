@@ -7,6 +7,11 @@
         android:name="${applicationId}.permission.CARDS"
         android:protectionLevel="signature" />
 
+    <!-- SMS's encrypted chat invite, for the card given by touching phones;
+         only SMS signed with the same key holds it. -->
+    <uses-permission android:name="com.yaz.sms.permission.INVITE" />
+    <uses-permission android:name="com.yaz.sms.debug.permission.INVITE" />
+
     <!-- One request to GitHub when the app opens, for the newest release. Nothing else goes out. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Only used when the user chooses to install updates from the app; Android asks them then. -->
@@ -59,6 +64,8 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:mimeType="vnd.android.cursor.item/*" />
         </intent>
+        <provider android:authorities="com.yaz.sms.invite" />
+        <provider android:authorities="com.yaz.sms.debug.invite" />
         <intent>
             <action android:name="com.yaz.sms.action.SHOW_KEYS" />
             <data android:scheme="smsto" />

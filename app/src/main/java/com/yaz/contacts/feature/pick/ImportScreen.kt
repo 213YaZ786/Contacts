@@ -62,7 +62,7 @@ import org.koin.compose.koinInject
  * shown first, saved only when the user says so, in the account chosen.
  */
 @Composable
-fun ImportScreen(source: Uri?, text: String? = null, onClose: () -> Unit, onDone: (Int) -> Unit) {
+fun ImportScreen(source: Uri?, text: String? = null, inPerson: Boolean = false, onClose: () -> Unit, onDone: (Int) -> Unit) {
     val context = LocalContext.current
     val store: ContactStore = koinInject()
     val writer: ContactWriter = koinInject()
@@ -139,7 +139,12 @@ fun ImportScreen(source: Uri?, text: String? = null, onClose: () -> Unit, onDone
                                     for (i in chosen.sorted()) {
                                         val card = list[i]
                                         val photo = card.photo?.let { bytes -> com.yaz.contacts.core.security.SafeImages.decode(context, bytes) }
-                                        if (writer.save(null, card.details, account, photo) != null) count++
+                                        if (writer.save(null, card.details, account, photo) != null) {
+                                            count++
+                                            // Met in person: their encrypted chat starts in SMS, already proven.
+                                            val number = card.details.phones.firstOrNull()?.value
+                                            if (inPerson && card.chat != null && number != null) com.yaz.contacts.core.handoff.ChatLink.join(context, card.chat, number)
+                                        }
                                         done = count
                                     }
                                     saving = false
