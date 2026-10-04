@@ -109,12 +109,16 @@ fun ActionTile(icon: ImageVector, label: String, tint: Color? = null, accent: Bo
     }
 }
 
-/** A choice of an [EvenRows] with a word in it, floating in glass: a filter. */
+/**
+ * A choice of an [EvenRows] with a word in it, floating in glass: a filter.
+ * 48 dp tall like every control here: a smaller one is grown to 48 by
+ * Material for the finger and spills over the gap, and two rows touch.
+ */
 @Composable
 fun TextControl(text: String, chosen: Boolean, onClick: () -> Unit) {
     val haptics = rememberHaptics()
-    FloatingPane(shape = CircleShape, accent = chosen, onClick = { haptics.tick(); onClick() }, modifier = Modifier.fillMaxWidth().height(40.dp)) {
-        Box(Modifier.fillMaxWidth().height(40.dp).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
+    FloatingPane(shape = CircleShape, accent = chosen, onClick = { haptics.tick(); onClick() }, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+        Box(Modifier.fillMaxWidth().height(48.dp).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
             Text(text, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
         }
     }
@@ -127,9 +131,9 @@ fun IconControl(icon: ImageVector, label: String, tint: Color = Color.Unspecifie
     FloatingPane(
         shape = CircleShape,
         onClick = { haptics.tick(); onClick() },
-        modifier = Modifier.fillMaxWidth().height(44.dp).semantics { contentDescription = label }
+        modifier = Modifier.fillMaxWidth().height(48.dp).semantics { contentDescription = label }
     ) {
-        Box(Modifier.fillMaxWidth().height(44.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
             Icon(icon, contentDescription = null, tint = tint.takeOrElse { MaterialTheme.colorScheme.primary }, modifier = Modifier.size(22.dp))
         }
     }
