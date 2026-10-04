@@ -82,7 +82,6 @@ android {
         compose = true
         buildConfig = true
         // The picture decoder in its isolated process is reached through Binder.
-        aidl = true
     }
 
     packaging {
