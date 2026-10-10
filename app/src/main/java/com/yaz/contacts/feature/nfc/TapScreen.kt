@@ -64,6 +64,8 @@ import com.yaz.contacts.feature.common.ActionTile
 import com.yaz.contacts.feature.common.EvenRows
 import com.yaz.contacts.feature.contact.Poster
 import com.yaz.contacts.ui.component.EmptyZone
+import com.yaz.contacts.ui.component.BoldButton
+import com.yaz.contacts.ui.component.QuietButton
 import com.yaz.contacts.ui.component.FloatingAction
 import com.yaz.contacts.ui.component.FloatingFrame
 import com.yaz.contacts.ui.component.FloatingTop
@@ -112,11 +114,17 @@ fun TapScreen(give: Boolean, own: Boolean = true, me: Details?, mePhoto: ImageBi
             openNfcPanel(context)
         }
     }
-    DisposableEffect(Unit) {
-        onDispose {
-            if (turnedOnHere && adapter?.isEnabled == true && activity?.isChangingConfigurations != true) openNfcPanel(context)
-        }
+    // Leaving after NFC was turned on here: under Android's panel, the switch shows
+    // what to do (turn it off), then a tick once it is off, and the screen goes.
+    var leaving by remember { mutableStateOf<(() -> Unit)?>(null) }
+    fun leave(then: () -> Unit) {
+        if (turnedOnHere && adapter?.isEnabled == true) {
+            leaving = then
+            openNfcPanel(context)
+        } else then()
     }
+    val back by rememberUpdatedState(onBack)
+    androidx.activity.compose.BackHandler(leaving == null) { leave { back() } }
     var touch by remember { mutableStateOf<Touch>(Touch.Waiting) }
     val got by rememberUpdatedState(onCard)
 
@@ -134,7 +142,7 @@ fun TapScreen(give: Boolean, own: Boolean = true, me: Details?, mePhoto: ImageBi
 
     FloatingFrame(
         bottom = 24.dp,
-        top = { FloatingTop(title = "Drop", leading = { FloatingAction(AppIcons.ArrowBack, "Back", onBack) }) }
+        top = { FloatingTop(title = "Drop", leading = { FloatingAction(AppIcons.ArrowBack, "Back", onClick = { leave { back() } }) }) }
     ) { padding ->
         val demo = BuildConfig.DEBUG && adapter == null
         when {
@@ -142,13 +150,33 @@ fun TapScreen(give: Boolean, own: Boolean = true, me: Details?, mePhoto: ImageBi
                 EmptyZone(title = "No NFC on this phone", message = "Share your card as a QR code instead.", icon = AppIcons.QrCode, modifier = Modifier.fillMaxSize().padding(padding))
                 return@FloatingFrame
             }
+            leaving != null -> {
+                val then = leaving!!
+                // Back from the panel: off, a tick and away; still on, the choice stays.
+                LaunchedEffect(on) {
+                    if (!on) {
+                        haptics.done()
+                        delay(900)
+                        leaving = null
+                        then()
+                    }
+                }
+                NfcSwitchStep(
+                    turnOn = false,
+                    done = !on,
+                    title = if (on) "Turn NFC back off" else "NFC is off",
+                    action = "Turn off NFC" to { openNfcPanel(context) },
+                    other = "Leave it on" to { leaving = null; then() },
+                    modifier = Modifier.fillMaxSize().padding(padding)
+                )
+                return@FloatingFrame
+            }
             adapter != null && !on -> {
-                EmptyZone(
+                NfcSwitchStep(
+                    turnOn = true,
+                    done = false,
                     title = "NFC is off",
-                    message = "Turn it on to swap cards by touching phones. On leaving, you can turn it back off in one tap.",
-                    icon = AppIcons.Nfc,
-                    actionLabel = "Turn on NFC",
-                    onAction = {
+                    action = "Turn on NFC" to {
                         turnedOnHere = true
                         openNfcPanel(context)
                     },
@@ -201,7 +229,7 @@ fun TapScreen(give: Boolean, own: Boolean = true, me: Details?, mePhoto: ImageBi
         val current = touch
         if (current is Touch.Got) LaunchedEffect(current) {
             delay(1700)
-            got(current.text)
+            leave { got(current.text) }
         }
         if (current is Touch.Sent) LaunchedEffect(current) {
             delay(2600)
@@ -366,6 +394,65 @@ private fun Stage(me: Details?, mePhoto: ImageBitmap?, receiving: Boolean, touch
                     size = androidx.compose.ui.geometry.Size(size.width, 3.dp.toPx())
                 )
             }
+        }
+    }
+}
+
+/**
+ * What to do in Android's NFC panel, shown under it: a switch that a finger
+ * taps, turning on or off over and over, until [done] gives a tick.
+ */
+@Composable
+private fun NfcSwitchStep(turnOn: Boolean, done: Boolean, title: String, action: Pair<String, () -> Unit>, modifier: Modifier, other: Pair<String, () -> Unit>? = null) {
+    val accent = MaterialTheme.colorScheme.primary
+    val track = MaterialTheme.colorScheme.outlineVariant
+    val knob = MaterialTheme.colorScheme.surface
+    val finger = MaterialTheme.colorScheme.onSurface
+    // One loop: the finger comes, taps, the knob slides and the track fills or empties, a pause, back.
+    val loop by rememberInfiniteTransition(label = "switch").animateFloat(0f, 1f, infiniteRepeatable(tween(2400, easing = LinearEasing)), label = "t")
+    val tick = remember { Animatable(0f) }
+    LaunchedEffect(done) { if (done) tick.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 300f)) else tick.snapTo(0f) }
+    Column(modifier.padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Box(Modifier.width(200.dp).aspectRatio(1.6f), contentAlignment = Alignment.Center) {
+            Canvas(Modifier.fillMaxSize()) {
+                val w = size.width * 0.62f
+                val h = w * 0.5f
+                val left = (size.width - w) / 2f
+                val top = (size.height - h) / 2f
+                // Where the switch stands in this loop: 0 the start state, 1 the asked one.
+                val flip = if (done) 1f else ((loop - 0.35f) / 0.15f).coerceIn(0f, 1f) * (1f - ((loop - 0.9f) / 0.1f).coerceIn(0f, 1f))
+                val lit = if (turnOn) flip else 1f - flip
+                drawRoundRect(androidx.compose.ui.graphics.lerp(track, accent, lit), Offset(left, top), androidx.compose.ui.geometry.Size(w, h), androidx.compose.ui.geometry.CornerRadius(h / 2f))
+                val r = h * 0.38f
+                val x = left + h / 2f + (w - h) * lit
+                drawCircle(Color.Black.copy(alpha = 0.12f), r * 1.05f, Offset(x, size.height / 2f + 2.dp.toPx()))
+                drawCircle(knob, r, Offset(x, size.height / 2f))
+                // The finger: comes in, presses (a ring), leaves.
+                if (!done) {
+                    val come = ((loop - 0.1f) / 0.25f).coerceIn(0f, 1f)
+                    val go = ((loop - 0.55f) / 0.25f).coerceIn(0f, 1f)
+                    val a = (come * (1f - go))
+                    if (a > 0f) {
+                        val fx = x + (1f - come) * w * 0.5f
+                        val fy = size.height / 2f + (1f - come) * h + go * h
+                        drawCircle(finger.copy(alpha = 0.28f * a), h * 0.3f, Offset(fx, fy))
+                        val press = ((loop - 0.35f) / 0.2f).coerceIn(0f, 1f)
+                        if (press in 0.01f..0.99f) drawCircle(finger.copy(alpha = 0.45f * (1f - press)), h * (0.3f + 0.5f * press), Offset(fx, fy), style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx()))
+                    }
+                }
+            }
+            androidx.compose.material3.Icon(
+                AppIcons.CheckCircle, contentDescription = null, tint = accent,
+                modifier = Modifier.align(Alignment.TopEnd).width(36.dp).aspectRatio(1f).graphicsLayer { scaleX = tick.value; scaleY = tick.value; alpha = tick.value.coerceIn(0f, 1f) }
+            )
+        }
+        androidx.compose.material3.Icon(AppIcons.Nfc, contentDescription = null, tint = accent, modifier = Modifier.width(28.dp).aspectRatio(1f))
+        Spacer(Modifier.height(8.dp))
+        Text(title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(16.dp))
+        if (!done) {
+            BoldButton(onClick = action.second, filled = true) { Text(action.first) }
+            other?.let { (label, run) -> QuietButton(onClick = run) { Text(label) } }
         }
     }
 }

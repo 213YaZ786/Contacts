@@ -388,8 +388,9 @@ private fun Group(title: String, content: @Composable ColumnScope.() -> Unit) {
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth().padding(start = 12.dp, top = 16.dp, bottom = 6.dp)
     )
-    ZoneSurface(shape = RoundedCornerShape(24.dp), modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth().animateContentSize()) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
+    // The size animates inside the zone: around it, animateContentSize would clip the soft shadow square.
+    ZoneSurface(shape = RoundedCornerShape(24.dp), modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth()) {
+        Column(Modifier.animateContentSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
     }
 }
 

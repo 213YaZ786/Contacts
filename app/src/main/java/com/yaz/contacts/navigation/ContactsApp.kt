@@ -159,7 +159,9 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
                 onGive = { nav.navigate(Routes.tap(true, it)) },
                 onOpenSettings = { nav.navigate(Routes.SETTINGS) },
                 onOpenTidy = { nav.navigate(Routes.TIDY) },
-                onAdd = { nav.navigate(Routes.edit()) }
+                onAdd = { nav.navigate(Routes.edit()) },
+                onImport = { nav.navigate(Routes.import(it)) },
+                onImportText = { text -> nav.navigate("import?uri=" + Uri.encode("text:" + drafts.put(text))) }
             )
             }
         }
@@ -359,7 +361,7 @@ private fun ContactsNavHost(nav: NavHostController, start: String, finish: ((Int
 
 /** The list, the way to a new contact floating over it, the first launch page until closed. */
 @Composable
-private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) -> Unit, onScan: () -> Unit, onPoster: (Long) -> Unit, onTap: () -> Unit, onGive: (Long) -> Unit, onPrivate: (String) -> Unit, onOpenSettings: () -> Unit, onOpenTidy: () -> Unit, onAdd: () -> Unit) {
+private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) -> Unit, onScan: () -> Unit, onPoster: (Long) -> Unit, onTap: () -> Unit, onGive: (Long) -> Unit, onPrivate: (String) -> Unit, onOpenSettings: () -> Unit, onOpenTidy: () -> Unit, onAdd: () -> Unit, onImport: (Uri) -> Unit, onImportText: (String) -> Unit) {
     val store: SettingsStore = koinInject()
     var showWelcome by rememberSaveable { mutableStateOf(!store.current.welcomeSeen) }
     val settings by store.settings.collectAsState()
@@ -373,10 +375,10 @@ private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) ->
         val wide = maxWidth >= 840.dp
         Box(Modifier.fillMaxSize().then(if (look != null) Modifier.glassSource(backdrop, look) else Modifier)) {
             if (!wide) {
-                ReadableScroll { ListScreen(onOpen = onOpen, onOpenPrivate = onPrivate, onMakeMe = onMakeMe, onOpenSettings = onOpenSettings, onOpenTidy = onOpenTidy) }
+                ReadableScroll { ListScreen(onOpen = onOpen, onOpenPrivate = onPrivate, onMakeMe = onMakeMe, onOpenSettings = onOpenSettings, onOpenTidy = onOpenTidy, onImport = onImport, onImportText = onImportText) }
             } else androidx.compose.foundation.layout.Row(Modifier.fillMaxSize()) {
                 Box(Modifier.weight(0.42f).fillMaxSize()) {
-                    ListScreen(onOpen = { picked = it }, onOpenPrivate = onPrivate, onMakeMe = { picked = null; onMakeMe() }, onOpenSettings = onOpenSettings, onOpenTidy = onOpenTidy)
+                    ListScreen(onOpen = { picked = it }, onOpenPrivate = onPrivate, onMakeMe = { picked = null; onMakeMe() }, onOpenSettings = onOpenSettings, onOpenTidy = onOpenTidy, onImport = onImport, onImportText = onImportText)
                 }
                 Box(Modifier.weight(0.58f).fillMaxSize()) {
                     androidx.compose.animation.Crossfade(picked, label = "pane") { id ->

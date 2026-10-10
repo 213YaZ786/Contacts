@@ -85,10 +85,14 @@ sealed interface Filter {
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe: () -> Unit, onOpenSettings: () -> Unit, onOpenTidy: () -> Unit) {
+fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe: () -> Unit, onOpenSettings: () -> Unit, onOpenTidy: () -> Unit, onImport: (android.net.Uri) -> Unit = {}, onImportText: (String) -> Unit = {}) {
     val store: ContactStore = koinInject()
     val settingsStore: SettingsStore = koinInject()
     val settings by settingsStore.settings.collectAsState()
+    // No contact yet: a file of cards or the SIM's, straight from the empty list.
+    val importer = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri -> uri?.let(onImport) }
+    val importScope = androidx.compose.runtime.rememberCoroutineScope()
+    val firstHaptics = rememberHaptics()
     val all by store.contacts.collectAsState()
     val groups by store.groups.collectAsState()
     val privateBook: com.yaz.contacts.data.contacts.PrivateBook = koinInject()
@@ -263,11 +267,15 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
                     )
                     f == Filter.Private -> PrivateList(hidden, query, padding, onOpenPrivate)
                     all == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { LoadingMark(size = 72.dp) }
-                    people.isEmpty() -> EmptyZone(
-                        title = "No contacts yet",
-                        message = "Add someone with the round button, or bring a file of contacts in from Tidy up.",
-                        icon = AppIcons.PersonAdd,
-                        modifier = Modifier.fillMaxSize().padding(padding)
+                    people.isEmpty() -> FirstImport(
+                        padding,
+                        onImportFile = { importer.launch(arrayOf("text/x-vcard", "text/vcard", "text/directory", "text/plain", "application/octet-stream")) },
+                        onImportSim = {
+                            importScope.launch {
+                                val text = com.yaz.contacts.data.contacts.Transfer.simCards(context)
+                                if (text.isBlank()) firstHaptics.reject() else onImportText(text)
+                            }
+                        }
                     )
                     f == Filter.Recent && query.isBlank() -> ForYouPage(
                         people = people,
@@ -541,7 +549,7 @@ private fun ContactMenu(menu: com.yaz.contacts.ui.component.PillMenuState, c: Co
             },
             PillItem(AppIcons.Share, "Share", PillMotion.BOUNCE) { Reach.share(context, listOf(c.lookup), c.name) },
             PillItem(AppIcons.CheckCircle, "Select", PillMotion.BOUNCE) { onSelect(c.id) },
-            PillItem(AppIcons.Delete, "Delete", PillMotion.DROP, AlertRed) { onDelete(c) }
+            PillItem(AppIcons.Delete, "Delete", PillMotion.DROP, AlertRed, danger = true) { onDelete(c) }
         ),
         columns = 2
     )
