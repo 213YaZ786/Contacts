@@ -41,7 +41,7 @@ import kotlin.math.sin
  * Contacts' loading mark, the launcher icon in motion: the person raises
  * their right hand from the bust and waves twice, the motion strokes
  * following the hand, then lowers it. The disc is the icon's: a grey body
- * multiplied by the theme's accent (its deep tone by night too), its white
+ * multiplied by the launcher icon's accent tone, day and night, its white
  * rim over it, the person on top. The wave is drawn frame by frame from
  * sprite sheets (Modules/icons/contacts: hand.py, wave_export.py).
  *
@@ -62,9 +62,8 @@ fun LoadingMark(
     val shadow = ImageBitmap.imageResource(R.drawable.people_wave_shadow)
     val strokes = ImageBitmap.imageResource(R.drawable.people_wave_strokes)
     val colors = MaterialTheme.colorScheme
-    val night = colors.background.luminance() < 0.5f
-    // The disc keeps the icon's deep tone; by night primary is a pale one.
-    val disc = if (night) colors.inversePrimary else colors.primary
+    // The launcher icon's own tone (ic_launcher_disc), so the mark is the icon by day and by night.
+    val disc = androidx.compose.ui.res.colorResource(android.R.color.system_accent1_500)
     val tint = remember(disc) { ColorFilter.tint(disc, BlendMode.Modulate) }
     val outside = remember(colors.primary) { ColorFilter.tint(colors.primary) }
     val onDisc = remember { ColorFilter.tint(IVORY) }
