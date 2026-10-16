@@ -111,6 +111,8 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.koin.android)
     implementation(libs.koin.compose)
+    // GIF frames, decoded only inside the isolated DecoderService.
+    implementation(libs.glide.gifdecoder)
     // Numbers written the way their country writes them and the same number
     // found under two spellings, offline: Google's libphonenumber (Apache-2.0).
     implementation("com.googlecode.libphonenumber:libphonenumber:9.0.40")
