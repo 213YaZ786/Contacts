@@ -37,8 +37,8 @@ android {
         applicationId = "com.yaz.contacts"
         minSdk = 31
         targetSdk = 37
-        versionCode = 21
-        versionName = "0.9.10"
+        versionCode = 22
+        versionName = "0.9.11"
     }
 
     signingConfigs {
@@ -96,6 +96,7 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)

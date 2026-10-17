@@ -27,6 +27,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Only used when the user chooses to install updates from the app; Android asks them then. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- An update goes in without a question when the user leaves the app. -->
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
     <!-- The note after an update and while one downloads. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- The contacts app: reads and keeps the people in Android's own contacts,
