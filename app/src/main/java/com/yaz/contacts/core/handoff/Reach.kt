@@ -13,6 +13,7 @@ import android.provider.ContactsContract
 import android.telecom.TelecomManager
 import androidx.core.content.ContextCompat
 import com.yaz.contacts.core.dial.NumberActions
+import com.yaz.contacts.core.dial.Sisters
 
 /**
  * Where a contact's buttons lead: the phone app calls, the messaging app
@@ -59,7 +60,9 @@ object Reach {
     /** The encryption keys of the chat with [number], in SMS; without it, the conversation. */
     fun keys(context: Context, number: String) {
         val uri = Uri.fromParts("smsto", number, null)
-        if (!open(context, Intent("com.yaz.sms.action.SHOW_KEYS", uri))) message(context, listOf(number))
+        // Only our SMS is asked (Sisters.explicit), else the conversation.
+        val ours = Sisters.explicit(context, Intent("com.yaz.sms.action.SHOW_KEYS", uri))
+        if (ours == null || !open(context, ours)) message(context, listOf(number))
     }
 
     fun canMessage(context: Context): Boolean = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:0")).resolveActivity(context.packageManager) != null

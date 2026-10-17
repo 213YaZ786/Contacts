@@ -3,6 +3,7 @@ package com.yaz.contacts.core.handoff
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
+import com.yaz.contacts.core.dial.Sisters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -14,7 +15,8 @@ import kotlinx.coroutines.withContext
  */
 object ChatLink {
 
-    private val authorities = listOf("com.yaz.sms.invite", "com.yaz.sms.debug.invite")
+    /** Asked only where the provider is SMS's own (Sisters). */
+    private const val AUTHORITY = "com.yaz.sms.invite"
 
     /** This phone's invite, or null when SMS or its chat is not there; up to 15 s while SMS's engine starts. */
     suspend fun invite(context: Context): String? = withContext(Dispatchers.IO) {
@@ -28,7 +30,7 @@ object ChatLink {
     }
 
     private fun call(context: Context, method: String, extras: Bundle?): Bundle? {
-        for (authority in authorities) {
+        for (authority in Sisters.usable(context, AUTHORITY)) {
             val result = runCatching { context.contentResolver.call(Uri.parse("content://$authority"), method, null, extras) }.getOrNull()
             if (result != null) return result
         }

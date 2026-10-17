@@ -3,6 +3,7 @@ package com.yaz.contacts.core.handoff
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
+import com.yaz.contacts.core.dial.Sisters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -14,8 +15,9 @@ import kotlinx.coroutines.withContext
  */
 object Talks {
 
-    private val dialer = listOf("com.yaz.dialer.people", "com.yaz.dialer.debug.people")
-    private val sms = listOf("com.yaz.sms.people", "com.yaz.sms.debug.people")
+    /** Asked only where the provider is that app's own (Sisters). */
+    private const val DIALER = "com.yaz.dialer.people"
+    private const val SMS = "com.yaz.sms.people"
 
     /**
      * The last call or message with each of [numbers], 0 when none; at most
@@ -28,8 +30,8 @@ object Talks {
         if (asked.isEmpty()) return@withContext out
         val extras = Bundle().apply { putStringArrayList("numbers", ArrayList(asked)) }
         var answered = false
-        for (side in listOf(dialer, sms)) {
-            val at = call(context, side, "last", extras)?.getLongArray("at") ?: continue
+        for (side in listOf(DIALER, SMS)) {
+            val at =call(context, side, "last", extras)?.getLongArray("at") ?: continue
             answered = true
             for (i in out.indices) if (i < at.size && at[i] in (out[i] + 1)..System.currentTimeMillis()) out[i] = at[i]
         }
@@ -40,7 +42,7 @@ object Talks {
     suspend fun frequent(context: Context, days: Int = 90): List<Pair<String, Int>> = withContext(Dispatchers.IO) {
         val counts = LinkedHashMap<String, Int>()
         val extras = Bundle().apply { putInt("days", days.coerceIn(1, 90)) }
-        for (side in listOf(dialer, sms)) {
+        for (side in listOf(DIALER, SMS)) {
             val result = call(context, side, "frequent", extras) ?: continue
             val numbers = result.getStringArrayList("numbers").orEmpty()
             val n = result.getIntArray("counts") ?: continue
@@ -52,8 +54,8 @@ object Talks {
         counts.entries.sortedByDescending { it.value }.take(20).map { it.key to it.value }
     }
 
-    private fun call(context: Context, authorities: List<String>, method: String, extras: Bundle): Bundle? {
-        for (authority in authorities) {
+    private fun call(context: Context, base: String, method: String, extras: Bundle): Bundle? {
+        for (authority in Sisters.usable(context, base)) {
             val result = runCatching { context.contentResolver.call(Uri.parse("content://$authority"), method, null, extras) }.getOrNull()
             if (result != null) return result
         }

@@ -273,7 +273,11 @@ object VCard {
                 // The look a person chose for themselves (their colour, monogram, poster), as the phone apps share it.
                 // The encrypted chat's invite of the person, given in person by touching phones.
                 "X-YAZ-CHAT" -> chat = unescape(p.value).trim().takeIf { com.yaz.contacts.core.handoff.ChatLink.valid(it) }
-                "X-YAZ-LOOK" -> look = com.yaz.contacts.core.contacts.LookCodec.decode(unescape(p.value)).takeIf { !it.isDefault }
+                // Only how they look: what the phone does for them (ring through Do not disturb, tone,
+                // vibration, keep in touch) is the user's own choice, never taken from a card (the writer
+                // below leaves the same fields out).
+                "X-YAZ-LOOK" -> look = com.yaz.contacts.core.contacts.LookCodec.decode(unescape(p.value))
+                    .copy(vibration = "", tone = "", bypass = false, every = 0).takeIf { !it.isDefault }
                 // Android writes its own kinds as X-ANDROID-CUSTOM:mimetype;value;...
                 "X-ANDROID-CUSTOM" -> {
                     val a = parts(p.value)
