@@ -49,7 +49,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.yaz.contacts.ui.component.BoldButton
 import com.yaz.contacts.ui.component.ContactAvatar
+import com.yaz.contacts.ui.component.QuietButton
 import com.yaz.contacts.ui.component.FloatingPane
 import com.yaz.contacts.ui.component.ZoneAlertDialog
 import com.yaz.contacts.ui.component.ZoneSurface
@@ -246,12 +248,12 @@ fun DeleteQuestion(what: String, days: Int, onDismiss: () -> Unit, onDelete: () 
         title = { Text("Delete $what?") },
         text = { Text("Kept in the trash for $days days, then gone. A synced account deletes it there too.") },
         confirmButton = {
-            TextButton(onClick = {
+            BoldButton(filled = true, onClick = {
                 haptics.reject()
                 onDelete()
             }) { Text("Delete", color = AlertRed) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = { QuietButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
 

@@ -17,7 +17,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.yaz.contacts.ui.component.BoldButton
+import com.yaz.contacts.ui.component.QuietButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -146,7 +147,7 @@ fun LabelScreen(id: Long, onBack: () -> Unit, onOpen: (Long) -> Unit) {
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
+                BoldButton(filled = picked.isNotEmpty(), onClick = {
                     adding = false
                     if (picked.isNotEmpty()) scope.launch { if (writer.setInGroup(id, picked, true)) haptics.done() }
                 }) { Text(if (picked.isEmpty()) "Cancel" else "Add ${picked.size}") }
@@ -160,12 +161,12 @@ fun LabelScreen(id: Long, onBack: () -> Unit, onOpen: (Long) -> Unit) {
             title = { Text("Rename") },
             text = { OutlinedTextField(title, { title = it.take(60) }, singleLine = true, shape = RoundedCornerShape(16.dp)) },
             confirmButton = {
-                TextButton(onClick = {
+                BoldButton(filled = true, onClick = {
                     renaming = false
                     if (title.isNotBlank()) scope.launch { writer.renameGroup(id, title) }
                 }) { Text("Save") }
             },
-            dismissButton = { TextButton(onClick = { renaming = false }) { Text("Cancel") } }
+            dismissButton = { QuietButton(onClick = { renaming = false }) { Text("Cancel") } }
         )
     }
     if (deleting) {
@@ -174,7 +175,7 @@ fun LabelScreen(id: Long, onBack: () -> Unit, onOpen: (Long) -> Unit) {
             title = { Text("Delete ${label?.title ?: "this label"}?") },
             text = { Text("The people in it stay in your contacts.") },
             confirmButton = {
-                TextButton(onClick = {
+                BoldButton(filled = true, onClick = {
                     deleting = false
                     scope.launch {
                         if (writer.deleteGroup(id)) {
@@ -184,7 +185,7 @@ fun LabelScreen(id: Long, onBack: () -> Unit, onOpen: (Long) -> Unit) {
                     }
                 }) { Text("Delete", color = AlertRed) }
             },
-            dismissButton = { TextButton(onClick = { deleting = false }) { Text("Cancel") } }
+            dismissButton = { QuietButton(onClick = { deleting = false }) { Text("Cancel") } }
         )
     }
 }

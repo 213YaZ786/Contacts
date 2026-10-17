@@ -21,7 +21,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.yaz.contacts.ui.component.BoldButton
+import com.yaz.contacts.ui.component.QuietButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -64,7 +65,7 @@ fun PictureChoice(onPhotos: () -> Unit, onPicked: (Bitmap) -> Unit, onDismiss: (
             // The kinds on top, each its own grid: no long scroll through all of them.
             var tab by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableIntStateOf(0) }
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                TextButton(onClick = { haptics.tick(); onPhotos() }, modifier = Modifier.fillMaxWidth()) {
+                QuietButton(onClick = { haptics.tick(); onPhotos() }, modifier = Modifier.fillMaxWidth()) {
                     Icon(AppIcons.Photo, null)
                     Text("From your photos", modifier = Modifier.padding(start = 8.dp))
                 }
@@ -95,7 +96,7 @@ fun PictureChoice(onPhotos: () -> Unit, onPicked: (Bitmap) -> Unit, onDismiss: (
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+        confirmButton = { BoldButton(filled = true, onClick = onDismiss) { Text("Close") } }
     )
 }
 

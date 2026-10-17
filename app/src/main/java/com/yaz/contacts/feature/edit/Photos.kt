@@ -9,7 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.yaz.contacts.ui.component.BoldButton
+import com.yaz.contacts.ui.component.QuietButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -82,12 +83,12 @@ fun CropDialog(bitmap: Bitmap, onDismiss: () -> Unit, onDone: (Bitmap) -> Unit) 
             }
         },
         confirmButton = {
-            TextButton(onClick = {
+            BoldButton(filled = true, onClick = {
                 haptics.done()
                 onDone(crop(bitmap, zoom, pan, box))
             }) { Text("Use") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = { QuietButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
 

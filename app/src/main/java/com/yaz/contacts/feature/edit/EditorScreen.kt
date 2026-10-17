@@ -38,7 +38,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Checkbox
+import com.yaz.contacts.ui.component.BoldButton
+import com.yaz.contacts.ui.component.GlassCheck
+import com.yaz.contacts.ui.component.GlassRadio
+import com.yaz.contacts.ui.component.QuietButton
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -46,9 +49,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -211,7 +212,7 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
                 }
             }
             if ((photo != null || (!removePhoto && d.photo != null))) {
-                TextButton(onClick = {
+                QuietButton(onClick = {
                     photo = null
                     removePhoto = original?.photo != null
                 }) { Text("Remove photo") }
@@ -229,7 +230,7 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
             }
 
             // A new contact from a paper card: read by the camera, the fields filled in for checking.
-            if (contactId == null && !me && prefill == null) TextButton(onClick = onCard) {
+            if (contactId == null && !me && prefill == null) QuietButton(onClick = onCard) {
                 Icon(AppIcons.ContactPage, null)
                 Spacer(Modifier.width(8.dp))
                 Text("Scan a business card")
@@ -265,7 +266,7 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
                 Input(d.note?.value.orEmpty(), "Notes", single = false, capital = true) { v -> edit { it.copy(note = (it.note ?: Labelled(kind = 0, value = "")).copy(value = v)) } }
             }
             if (!more) {
-                TextButton(onClick = {
+                QuietButton(onClick = {
                     haptics.tick()
                     more = true
                 }, modifier = Modifier.padding(top = 8.dp)) { Text("More fields") }
@@ -309,7 +310,7 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
                                 choosingAccount = false
                             }.padding(vertical = 10.dp, horizontal = 4.dp)
                         ) {
-                            RadioButton(selected = a.key == account?.key, onClick = null)
+                            GlassRadio(selected = a.key == account?.key, onClick = null)
                             Column(Modifier.padding(start = 12.dp)) {
                                 Text(accountLabel(a))
                                 if (a.type == null) Text("Not backed up", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -318,7 +319,7 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { choosingAccount = false }) { Text("Cancel") } }
+            confirmButton = { QuietButton(onClick = { choosingAccount = false }) { Text("Cancel") } }
         )
     }
     if (leaving) {
@@ -327,12 +328,12 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
             title = { Text("Leave without saving?") },
             text = { Text("Your changes will be lost.") },
             confirmButton = {
-                TextButton(onClick = {
+                BoldButton(filled = true, onClick = {
                     leaving = false
                     onClose()
                 }) { Text("Leave", color = AlertRed) }
             },
-            dismissButton = { TextButton(onClick = { leaving = false }) { Text("Keep editing") } }
+            dismissButton = { QuietButton(onClick = { leaving = false }) { Text("Keep editing") } }
         )
     }
 }
@@ -495,14 +496,14 @@ private fun KindDialog(field: Field, kind: Int, custom: String?, onDismiss: () -
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onPick(k, null) }.padding(vertical = 8.dp, horizontal = 4.dp)
                     ) {
-                        RadioButton(selected = k == kind, onClick = null)
+                        GlassRadio(selected = k == kind, onClick = null)
                         Text(field.label(context.resources, k, null), modifier = Modifier.padding(start = 12.dp))
                     }
                 }
                 Input(own, "Your own label") { own = it.take(40) }
             }
         },
-        confirmButton = { TextButton(onClick = { if (own.isNotBlank()) onPick(field.custom, own.trim()) else onDismiss() }) { Text(if (own.isNotBlank()) "Use" else "Cancel") } }
+        confirmButton = { BoldButton(filled = own.isNotBlank(), onClick = { if (own.isNotBlank()) onPick(field.custom, own.trim()) else onDismiss() }) { Text(if (own.isNotBlank()) "Use" else "Cancel") } }
     )
 }
 
@@ -590,13 +591,13 @@ private fun DatesGroup(items: List<Labelled>, onChange: (List<Labelled>) -> Unit
                 Column(Modifier.verticalScroll(rememberScrollState())) {
                     DatePicker(state = state, showModeToggle = true, title = null, headline = null)
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { noYear = !noYear }) {
-                        Checkbox(checked = noYear, onCheckedChange = { noYear = it })
+                        GlassCheck(checked = noYear, onCheckedChange = { noYear = it })
                         Text("Without the year")
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
+                BoldButton(filled = true, onClick = {
                     val millis = state.selectedDateMillis
                     picking = null
                     if (millis != null) {
@@ -606,7 +607,7 @@ private fun DatesGroup(items: List<Labelled>, onChange: (List<Labelled>) -> Unit
                     }
                 }) { Text("Done") }
             },
-            dismissButton = { TextButton(onClick = { picking = null }) { Text("Cancel") } }
+            dismissButton = { QuietButton(onClick = { picking = null }) { Text("Cancel") } }
         )
     }
     labelling?.let { i ->

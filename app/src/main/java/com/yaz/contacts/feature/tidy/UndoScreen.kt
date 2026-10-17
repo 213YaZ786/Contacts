@@ -9,10 +9,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Checkbox
+import com.yaz.contacts.ui.component.BoldButton
+import com.yaz.contacts.ui.component.GlassCheck
+import com.yaz.contacts.ui.component.QuietButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -117,7 +118,7 @@ fun UndoScreen(onBack: () -> Unit) {
                         if (plan.back.isNotEmpty()) Text("${plan.back.size} come back: " + plan.back.take(4).joinToString(", ") { it.display.ifBlank { it.name.display() } } + if (plan.back.size > 4) "…" else "")
                         if (plan.changed.isNotEmpty()) Text("${plan.changed.size} are changed back: " + plan.changed.take(4).joinToString(", ") { it.second.display } + if (plan.changed.size > 4) "…" else "")
                         if (plan.added.isNotEmpty()) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                            Checkbox(checked = removeAdded, onCheckedChange = { removeAdded = it })
+                            GlassCheck(checked = removeAdded, onCheckedChange = { removeAdded = it })
                             Text("Also put the ${plan.added.size} added since in the trash")
                         }
                         Text("How they are now is kept, so this can be undone too.", style = MaterialTheme.typography.bodySmall)
@@ -126,7 +127,7 @@ fun UndoScreen(onBack: () -> Unit) {
                 }
             },
             confirmButton = {
-                if (!plan.isEmpty) TextButton(enabled = !working, onClick = {
+                if (!plan.isEmpty) BoldButton(filled = true, enabled = !working, onClick = {
                     working = true
                     scope.launch {
                         val done = snapshots.restore(kept, plan, trash, removeAdded)
@@ -137,7 +138,7 @@ fun UndoScreen(onBack: () -> Unit) {
                     }
                 }) { Text("Go back") }
             },
-            dismissButton = { TextButton(enabled = !working, onClick = { asking = null }) { Text("Cancel") } }
+            dismissButton = { QuietButton(enabled = !working, onClick = { asking = null }) { Text("Cancel") } }
         )
     }
 }

@@ -16,9 +16,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
+import com.yaz.contacts.ui.component.GlassRadio
+import com.yaz.contacts.ui.component.QuietButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -172,13 +172,13 @@ fun ImportScreen(source: Uri?, text: String? = null, inPerson: Boolean = false, 
                                 choosingAccount = false
                             }.padding(vertical = 10.dp, horizontal = 4.dp)
                         ) {
-                            RadioButton(selected = a.key == account?.key, onClick = null)
+                            GlassRadio(selected = a.key == account?.key, onClick = null)
                             Text(accountLabel(a), modifier = Modifier.padding(start = 12.dp))
                         }
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { choosingAccount = false }) { Text("Cancel") } }
+            confirmButton = { QuietButton(onClick = { choosingAccount = false }) { Text("Cancel") } }
         )
     }
 }

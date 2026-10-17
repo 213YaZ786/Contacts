@@ -36,10 +36,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.TextButton
+import com.yaz.contacts.ui.component.BoldButton
+import com.yaz.contacts.ui.component.BoldIconButton
+import com.yaz.contacts.ui.component.GlassCheck
+import com.yaz.contacts.ui.component.GlassRadio
+import com.yaz.contacts.ui.component.GlassSwitch
+import com.yaz.contacts.ui.component.QuietButton
 import com.yaz.contacts.ui.component.ZoneAlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -264,7 +268,7 @@ fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDelete
             )
         },
         confirmButton = {
-            TextButton(onClick = {
+            BoldButton(filled = true, onClick = {
                 hiding = false
                 scope.launch {
                     val person = privateBook.hide(context, d, writer)
@@ -275,7 +279,7 @@ fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDelete
                 }
             }) { Text("Keep private") }
         },
-        dismissButton = { TextButton(onClick = { hiding = false }) { Text("Cancel") } }
+        dismissButton = { QuietButton(onClick = { hiding = false }) { Text("Cancel") } }
     )
     if (showQr) QrDialog(d, onDismiss = { showQr = false })
     if (moving) MoveDialog(d, onDismiss = { moving = false }) { account ->
@@ -404,7 +408,7 @@ private fun SayName(spoken: String) {
     val haptics = rememberHaptics()
     var voice by remember { mutableStateOf<android.speech.tts.TextToSpeech?>(null) }
     DisposableEffect(Unit) { onDispose { voice?.shutdown() } }
-    IconButton(onClick = {
+    BoldIconButton(onClick = {
         haptics.tick()
         val ready = voice
         if (ready != null) ready.speak(spoken, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "name")
@@ -442,7 +446,7 @@ private fun KeepBackDialog(d: Details, onDismiss: () -> Unit) {
                 settingsStore.update { it.copy(keptBack = if (on) it.keptBack + key else it.keptBack - key) }
             }.padding(vertical = 6.dp)
         ) {
-            androidx.compose.material3.Checkbox(checked = on, onCheckedChange = null)
+            GlassCheck(checked = on, onCheckedChange = null)
             Column(Modifier.padding(start = 10.dp)) {
                 Text(title, style = MaterialTheme.typography.bodyLarge)
                 note?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -463,7 +467,7 @@ private fun KeepBackDialog(d: Details, onDismiss: () -> Unit) {
                 if (!d.organization.isEmpty) Choice(S.WORK, listOf(d.organization.title, d.organization.company).filter { it.isNotBlank() }.joinToString(" · "), "Work")
             }
         },
-        confirmButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Done") } }
+        confirmButton = { BoldButton(filled = true, onClick = onDismiss) { Text("Done") } }
     )
 }
 
@@ -530,7 +534,7 @@ private fun Actions(d: Details, onQr: () -> Unit, onScan: () -> Unit, onTap: () 
                     }
                 }
             },
-            confirmButton = { androidx.compose.material3.TextButton(onClick = { sharing = false }) { Text("Cancel") } }
+            confirmButton = { QuietButton(onClick = { sharing = false }) { Text("Cancel") } }
         )
     }
     choosing?.let { what ->
@@ -673,13 +677,13 @@ private fun OnThisPhone(d: Details, onRingtone: () -> Unit, onVoicemail: (Boolea
                                 scope.launch { writer.save(d, d.copy(look = d.look.copy(every = days)), null) }
                             }.padding(vertical = 8.dp)
                         ) {
-                            androidx.compose.material3.RadioButton(selected = d.look.every == days, onClick = null)
+                            GlassRadio(selected = d.look.every == days, onClick = null)
                             Text(label, modifier = Modifier.padding(start = 12.dp))
                         }
                     }
                 }
             },
-            confirmButton = { androidx.compose.material3.TextButton(onClick = { choosingEvery = false }) { Text("Cancel") } }
+            confirmButton = { QuietButton(onClick = { choosingEvery = false }) { Text("Cancel") } }
         )
         InfoRow(AppIcons.Ringtone, ringtone, "Ringtone", onClick = onRingtone)
         InfoRow(AppIcons.Message, tone, "Sound of their messages", onClick = onTone)
@@ -693,7 +697,7 @@ private fun OnThisPhone(d: Details, onRingtone: () -> Unit, onVoicemail: (Boolea
                 Text("Send their calls to voicemail", style = MaterialTheme.typography.bodyLarge)
                 Text("The phone does not ring for them", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Switch(checked = d.toVoicemail, onCheckedChange = onVoicemail)
+            GlassSwitch(checked = d.toVoicemail, onCheckedChange = onVoicemail)
         }
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).combinedClickableCompat { onBypass(!d.look.bypass) }.padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp)) {
             Icon(AppIcons.Call, null, tint = MaterialTheme.colorScheme.primary)
@@ -701,7 +705,7 @@ private fun OnThisPhone(d: Details, onRingtone: () -> Unit, onVoicemail: (Boolea
                 Text("Ring even in Do Not Disturb", style = MaterialTheme.typography.bodyLarge)
                 Text("Their calls ring when the phone is silent (in Dialer)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Switch(checked = d.look.bypass, onCheckedChange = onBypass)
+            GlassSwitch(checked = d.look.bypass, onCheckedChange = onBypass)
         }
     }
 }
@@ -751,7 +755,7 @@ private fun MoveDialog(d: Details, onDismiss: () -> Unit, onPick: (Account) -> U
                 Text("Its labels stay with the old account.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
-        confirmButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancel") } }
+        confirmButton = { QuietButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
 
@@ -851,6 +855,6 @@ fun NumberChoice(d: Details, title: String, onDismiss: () -> Unit, onPick: (Stri
                 }
             }
         },
-        confirmButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancel") } }
+        confirmButton = { QuietButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }

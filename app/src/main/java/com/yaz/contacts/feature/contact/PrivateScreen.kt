@@ -19,7 +19,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.yaz.contacts.ui.component.BoldButton
+import com.yaz.contacts.ui.component.QuietButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -132,14 +133,14 @@ fun PrivateScreen(id: String, onBack: () -> Unit, onPublic: (Long) -> Unit) {
         title = { Text("Delete ${person.details.display}?") },
         text = { Text("A private contact is only here: it will be gone for good.") },
         confirmButton = {
-            TextButton(onClick = {
+            BoldButton(filled = true, onClick = {
                 deleting = false
                 haptics.reject()
                 book.remove(person.id)
                 onBack()
             }) { Text("Delete", color = AlertRed) }
         },
-        dismissButton = { TextButton(onClick = { deleting = false }) { Text("Cancel") } }
+        dismissButton = { QuietButton(onClick = { deleting = false }) { Text("Cancel") } }
     )
 }
 

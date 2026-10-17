@@ -34,10 +34,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Switch
+import com.yaz.contacts.ui.component.BoldButton
+import com.yaz.contacts.ui.component.GlassCheck
+import com.yaz.contacts.ui.component.GlassRadio
+import com.yaz.contacts.ui.component.GlassSwitch
+import com.yaz.contacts.ui.component.QuietButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
@@ -289,13 +291,13 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koinViewMo
                                     viewModel.setShownAccounts(if (next.size == accounts.size || next.isEmpty()) emptySet() else next)
                                 }.padding(vertical = 8.dp, horizontal = 4.dp)
                             ) {
-                                androidx.compose.material3.Checkbox(checked = on, onCheckedChange = null)
+                                GlassCheck(checked = on, onCheckedChange = null)
                                 Text(accountLabel(a), modifier = Modifier.padding(start = 12.dp))
                             }
                         }
                     }
                 },
-                confirmButton = { TextButton(onClick = { dialog = OpenDialog.NONE }) { Text("Done") } }
+                confirmButton = { BoldButton(filled = true, onClick = { dialog = OpenDialog.NONE }) { Text("Done") } }
             )
         }
         OpenDialog.TRASH -> ChoiceDialog(
@@ -369,7 +371,7 @@ private fun SwitchRow(title: String, summary: String, checked: Boolean, enabled:
         summary = summary,
         quiet = true,
         onClick = if (enabled) ({ change(!checked) }) else null,
-        trailing = { Switch(checked = checked, onCheckedChange = change, enabled = enabled) }
+        trailing = { GlassSwitch(checked = checked, onCheckedChange = change, enabled = enabled) }
     )
 }
 
@@ -398,13 +400,13 @@ private fun <T> ChoiceDialog(
                             .padding(vertical = 10.dp, horizontal = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        RadioButton(selected = value == selected, onClick = null)
+                        GlassRadio(selected = value == selected, onClick = null)
                         Text(label, modifier = Modifier.padding(start = 12.dp))
                     }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        confirmButton = { QuietButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
 

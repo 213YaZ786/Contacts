@@ -47,7 +47,9 @@ import com.yaz.contacts.feature.common.rememberUndo
 import com.yaz.contacts.feature.contact.InfoRow
 import com.yaz.contacts.feature.contact.InfoZone
 import com.yaz.contacts.feature.contact.accountLabel
+import com.yaz.contacts.ui.component.BoldButton
 import com.yaz.contacts.ui.component.ContactAvatar
+import com.yaz.contacts.ui.component.QuietButton
 import com.yaz.contacts.ui.component.FloatingAction
 import com.yaz.contacts.ui.component.FloatingFrame
 import com.yaz.contacts.ui.component.FloatingTop
@@ -194,14 +196,14 @@ fun TidyScreen(onBack: () -> Unit, onOpen: (Long) -> Unit, onTrash: () -> Unit, 
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    val a = account ?: return@TextButton
-                    if (title.isBlank()) return@TextButton
+                BoldButton(filled = true, onClick = {
+                    val a = account ?: return@BoldButton
+                    if (title.isBlank()) return@BoldButton
                     naming = false
                     scope.launch { writer.createGroup(title, a)?.let { haptics.done(); onLabel(it) } }
                 }) { Text("Create") }
             },
-            dismissButton = { TextButton(onClick = { naming = false }) { Text("Cancel") } }
+            dismissButton = { QuietButton(onClick = { naming = false }) { Text("Cancel") } }
         )
     }
 }

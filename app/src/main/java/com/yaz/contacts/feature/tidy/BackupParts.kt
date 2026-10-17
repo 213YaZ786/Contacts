@@ -12,7 +12,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.yaz.contacts.ui.component.BoldButton
+import com.yaz.contacts.ui.component.QuietButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -109,13 +110,13 @@ fun BackupZone(accounts: List<Account>) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Backup of " + DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.SHORT).format(Date(b.at)))
                     if (accounts.size > 1) accounts.forEach { a ->
-                        TextButton(onClick = { account = a }) { Text((if (a.key == account?.key) "● " else "○ ") + accountLabel(a)) }
+                        QuietButton(onClick = { account = a }) { Text((if (a.key == account?.key) "● " else "○ ") + accountLabel(a)) }
                     }
                     Text("They are added as new contacts; Tidy up finds any saved twice.", style = MaterialTheme.typography.bodySmall)
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
+                BoldButton(filled = true, onClick = {
                     val chosen = account
                     book = null
                     working = "Restoring…"
@@ -128,7 +129,7 @@ fun BackupZone(accounts: List<Account>) {
                     }
                 }) { Text("Restore") }
             },
-            dismissButton = { TextButton(onClick = { book = null }) { Text("Cancel") } }
+            dismissButton = { QuietButton(onClick = { book = null }) { Text("Cancel") } }
         )
     }
     working?.let { what ->
@@ -167,7 +168,7 @@ fun PassphraseDialog(twice: Boolean, title: String, onDismiss: () -> Unit, onDon
                 )
             }
         },
-        confirmButton = { TextButton(enabled = ready, onClick = { onDone(first.toCharArray()) }) { Text("Continue") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        confirmButton = { BoldButton(filled = true, enabled = ready, onClick = { onDone(first.toCharArray()) }) { Text("Continue") } },
+        dismissButton = { QuietButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }

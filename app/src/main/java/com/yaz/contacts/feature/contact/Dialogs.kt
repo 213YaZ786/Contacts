@@ -24,9 +24,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
+import com.yaz.contacts.ui.component.BoldButton
+import com.yaz.contacts.ui.component.GlassRadio
+import com.yaz.contacts.ui.component.QuietButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -116,7 +117,7 @@ fun QrDialog(d: Details, onDismiss: () -> Unit) {
                 )
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } }
+        confirmButton = { BoldButton(filled = true, onClick = onDismiss) { Text("Done") } }
     )
 }
 
@@ -226,8 +227,8 @@ fun MonogramDialog(name: String, current: Look, onDismiss: () -> Unit, onPick: (
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { haptics.done(); onPick(look) }) { Text("Done") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        confirmButton = { BoldButton(filled = true, onClick = { haptics.done(); onPick(look) }) { Text("Done") } },
+        dismissButton = { QuietButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
 
@@ -279,13 +280,13 @@ fun VibrationDialog(current: String, onDismiss: () -> Unit, onPick: (String) -> 
                             }
                             .padding(vertical = 8.dp, horizontal = 4.dp)
                     ) {
-                        RadioButton(selected = name == selected, onClick = null)
+                        GlassRadio(selected = name == selected, onClick = null)
                         Text(name.ifBlank { "As the phone" }, modifier = Modifier.padding(start = 12.dp))
                     }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { onPick(selected) }) { Text("Done") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        confirmButton = { BoldButton(filled = true, onClick = { onPick(selected) }) { Text("Done") } },
+        dismissButton = { QuietButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }

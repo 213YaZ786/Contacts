@@ -356,7 +356,7 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
                 }
             }
         },
-        confirmButton = { androidx.compose.material3.TextButton(onClick = { choosingView = false }) { Text("Close") } }
+        confirmButton = { com.yaz.contacts.ui.component.BoldButton(filled = true, onClick = { choosingView = false }) { Text("Close") } }
     )
     if (deleting.isNotEmpty()) {
         val those = deleting
@@ -411,7 +411,7 @@ private fun LabelChoice(groups: List<com.yaz.contacts.core.contacts.Group>, onDi
                 }
             }
         },
-        confirmButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancel") } }
+        confirmButton = { com.yaz.contacts.ui.component.QuietButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
 

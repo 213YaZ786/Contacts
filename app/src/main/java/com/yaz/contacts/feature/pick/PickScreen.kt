@@ -20,7 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.yaz.contacts.ui.component.QuietButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -163,7 +163,7 @@ fun PickScreen(kind: PickKind, title: String, onClose: () -> Unit, onPicked: (Ur
                         }
                     }
                 },
-                confirmButton = { TextButton(onClick = { choosing = null }) { Text("Cancel") } }
+                confirmButton = { QuietButton(onClick = { choosing = null }) { Text("Cancel") } }
             )
         }
     }

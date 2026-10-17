@@ -28,7 +28,9 @@ import com.yaz.contacts.data.contacts.Trash
 import com.yaz.contacts.data.settings.SettingsStore
 import com.yaz.contacts.feature.common.PersonLine
 import com.yaz.contacts.feature.common.rememberUndo
+import com.yaz.contacts.ui.component.BoldButton
 import com.yaz.contacts.ui.component.EmptyZone
+import com.yaz.contacts.ui.component.QuietButton
 import com.yaz.contacts.ui.component.FloatingAction
 import com.yaz.contacts.ui.component.FloatingFrame
 import com.yaz.contacts.ui.component.FloatingTop
@@ -112,13 +114,13 @@ fun TrashScreen(onBack: () -> Unit, onRestored: (Long) -> Unit) {
             title = { Text("Empty the trash?") },
             text = { Text("${entries.size} contacts will be gone for good.") },
             confirmButton = {
-                TextButton(onClick = {
+                BoldButton(filled = true, onClick = {
                     emptying = false
                     haptics.reject()
                     scope.launch { trash.empty() }
                 }) { Text("Empty", color = AlertRed) }
             },
-            dismissButton = { TextButton(onClick = { emptying = false }) { Text("Cancel") } }
+            dismissButton = { QuietButton(onClick = { emptying = false }) { Text("Cancel") } }
         )
     }
 }
