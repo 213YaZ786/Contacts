@@ -333,9 +333,9 @@ private fun Header(d: Details) {
         SayName(phonetic.ifBlank { d.display })
     }
     if (phonetic.isNotBlank()) Text(phonetic, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    val also = listOfNotNull(d.nickname?.value?.let { "“$it”" }, d.look.pronouns.takeIf { it.isNotBlank() }).joinToString(" · ")
+    val also = listOfNotNull(d.nickname?.value?.let { "“$it”" }, d.look.pronouns.takeIf { it.isNotBlank() }).joinToString(", ") // as AOSP Dialer's CallLogEntryText.java joinSecondaryTextComponents (https://android.googlesource.com/platform/packages/apps/Dialer/+/refs/heads/main/java/com/android/dialer/calllogutils/CallLogEntryText.java)
     if (also.isNotBlank()) Text(also, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    val work = listOf(d.organization.title, d.organization.department, d.organization.company).filter { it.isNotBlank() }.joinToString(" · ")
+    val work = listOf(d.organization.title, d.organization.department, d.organization.company).filter { it.isNotBlank() }.joinToString(", ") // as AOSP Dialer's CallLogEntryText.java joinSecondaryTextComponents (https://android.googlesource.com/platform/packages/apps/Dialer/+/refs/heads/main/java/com/android/dialer/calllogutils/CallLogEntryText.java)
     if (work.isNotBlank()) Text(work, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
 }
 
@@ -352,7 +352,7 @@ private fun Verified(d: Details) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)) {
             Icon(if (state) AppIcons.Verified else AppIcons.Lock, null, tint = if (state) AnswerGreen else MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(6.dp))
-            Text(if (state) "Encrypted chat · verified" else "Encrypted chat", style = MaterialTheme.typography.labelLarge)
+            Text(if (state) "Encrypted chat, verified" else "Encrypted chat", style = MaterialTheme.typography.labelLarge)
         }
     }
 }
@@ -464,7 +464,7 @@ private fun KeepBackDialog(d: Details, onDismiss: () -> Unit) {
                 d.phones.distinctBy { S.key("tel", it.value) }.forEach { Choice(S.key("tel", it.value), Numbers.format(context, it.value), Field.PHONE.label(context.resources, it.kind, it.custom)) }
                 d.emails.forEach { Choice(S.key("mail", it.value), it.value, Field.EMAIL.label(context.resources, it.kind, it.custom)) }
                 d.websites.forEach { Choice(S.key("web", it.value), it.value, null) }
-                if (!d.organization.isEmpty) Choice(S.WORK, listOf(d.organization.title, d.organization.company).filter { it.isNotBlank() }.joinToString(" · "), "Work")
+                if (!d.organization.isEmpty) Choice(S.WORK, listOf(d.organization.title, d.organization.company).filter { it.isNotBlank() }.joinToString(", "), "Work")
             }
         },
         confirmButton = { BoldButton(filled = true, onClick = onDismiss) { Text("Done") } }
@@ -570,7 +570,7 @@ internal fun Fields(d: Details) {
             InfoRow(
                 icon = AppIcons.Call,
                 value = Numbers.format(context, p.value),
-                label = Field.PHONE.label(res, p.kind, p.custom) + if (p.primary) " · default" else "",
+                label = Field.PHONE.label(res, p.kind, p.custom) + if (p.primary) ", default" else "", // joined with a comma, as AOSP Dialer's CallLogEntryText.java (https://android.googlesource.com/platform/packages/apps/Dialer/+/refs/heads/main/java/com/android/dialer/calllogutils/CallLogEntryText.java)
                 onClick = { Reach.call(context, p.value) },
                 copy = p.value,
                 trailing = if (Reach.canMessage(context)) ({
@@ -601,7 +601,7 @@ internal fun Fields(d: Details) {
             InfoRow(
                 icon = if (e.kind == android.provider.ContactsContract.CommonDataKinds.Event.TYPE_BIRTHDAY) AppIcons.Cake else AppIcons.Event,
                 value = Dates.spoken(date),
-                label = listOfNotNull(Field.EVENT.label(res, e.kind, e.custom), note).joinToString(" · "),
+                label = listOfNotNull(Field.EVENT.label(res, e.kind, e.custom), note).joinToString(", "),
                 onClick = null,
                 copy = Dates.spoken(date),
                 // On the day, a word to them goes through the messaging app.
@@ -619,7 +619,7 @@ internal fun Fields(d: Details) {
     }
     if (d.messengers.isNotEmpty() || d.sips.isNotEmpty()) InfoZone("Chat") {
         d.messengers.forEach { m -> InfoRow(AppIcons.Message, m.value, m.custom?.takeIf { it.isNotBlank() } ?: "Chat", onClick = null, copy = m.value) }
-        d.sips.forEach { s -> InfoRow(AppIcons.Call, s.value, "SIP · " + Field.SIP.label(res, s.kind, s.custom), onClick = null, copy = s.value) }
+        d.sips.forEach { s -> InfoRow(AppIcons.Call, s.value, "SIP, " + Field.SIP.label(res, s.kind, s.custom), onClick = null, copy = s.value) }
     }
     if (d.others.isNotEmpty()) InfoZone("In other apps") {
         d.others.forEach { o ->
@@ -724,7 +724,7 @@ private fun Elsewhere(d: Details, onDelete: () -> Unit, onSeparate: () -> Unit, 
         InfoRow(AppIcons.Add, "Add to the home screen", null, onClick = {
             scope.launch { if (com.yaz.contacts.core.handoff.Shortcuts.pin(context, d, accent)) haptics.done() else haptics.reject() }
         })
-        InfoRow(AppIcons.Account, d.accounts.joinToString(", ") { accountLabel(it) }, if (d.readOnly || android.provider.ContactsContract.isProfileId(d.id)) "Saved in" else "Saved in · tap to move", onClick = if (d.readOnly || android.provider.ContactsContract.isProfileId(d.id)) null else onMove)
+        InfoRow(AppIcons.Account, d.accounts.joinToString(", ") { accountLabel(it) }, if (d.readOnly || android.provider.ContactsContract.isProfileId(d.id)) "Saved in" else "Saved in, tap to move", onClick = if (d.readOnly || android.provider.ContactsContract.isProfileId(d.id)) null else onMove)
         if (d.raws.size > 1) InfoRow(AppIcons.PersonRemove, "Separate", "Back into ${d.raws.size} contacts", onClick = onSeparate)
         if (!d.readOnly && !android.provider.ContactsContract.isProfileId(d.id)) InfoRow(AppIcons.Lock, "Keep private", "Only in Contacts, out of sight of other apps", onClick = onPrivate)
         if (!d.readOnly) InfoRow(AppIcons.Delete, "Delete", null, onClick = onDelete, tint = AlertRed)
@@ -762,8 +762,9 @@ private fun MoveDialog(d: Details, onDismiss: () -> Unit, onPick: (Account) -> U
 /** "Google · name@gmail.com", "This phone". */
 fun accountLabel(a: Account): String = when {
     a.type == null -> "This phone"
-    a.type == "com.google" -> "Google · ${a.name}"
-    a.type.contains("davdroid") || a.type.contains("davx5") -> "CardDAV · ${a.name}"
+    // Type and account joined with a comma, as AOSP Dialer's CallLogEntryText.java (https://android.googlesource.com/platform/packages/apps/Dialer/+/refs/heads/main/java/com/android/dialer/calllogutils/CallLogEntryText.java).
+    a.type == "com.google" -> "Google, ${a.name}"
+    a.type.contains("davdroid") || a.type.contains("davx5") -> "CardDAV, ${a.name}"
     a.type.contains("sim", ignoreCase = true) -> "SIM"
     else -> a.label
 }

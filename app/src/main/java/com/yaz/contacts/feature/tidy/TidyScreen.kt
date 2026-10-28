@@ -107,7 +107,8 @@ fun TidyScreen(onBack: () -> Unit, onOpen: (Long) -> Unit, onTrash: () -> Unit, 
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)
         ) {
             Spacer(Modifier.height(padding.calculateTopPadding()))
-            InfoZone(if (duplicates.isEmpty()) "Saved twice" else "Saved twice · ${duplicates.size}") {
+            // Joined with a comma, as AOSP Dialer's CallLogEntryText.java (https://android.googlesource.com/platform/packages/apps/Dialer/+/refs/heads/main/java/com/android/dialer/calllogutils/CallLogEntryText.java).
+            InfoZone(if (duplicates.isEmpty()) "Saved twice" else "Saved twice, ${duplicates.size}") {
                 if (duplicates.isEmpty()) InfoRow(AppIcons.CheckCircle, "No one is saved twice", null, onClick = null)
                 duplicates.forEach { group ->
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
@@ -146,7 +147,7 @@ fun TidyScreen(onBack: () -> Unit, onOpen: (Long) -> Unit, onTrash: () -> Unit, 
                 counts.forEach { (a, n) -> InfoRow(AppIcons.Account, accountLabel(a), if (n == 1) "1 contact" else "$n contacts", onClick = null) }
             }
             InfoZone("Labels") {
-                groups.forEach { g -> InfoRow(AppIcons.Label, g.title, "${g.count} · " + accountName(g.account, known), onClick = { onLabel(g.id) }) }
+                groups.forEach { g -> InfoRow(AppIcons.Label, g.title, (if (g.count == 1) "1 contact, " else "${g.count} contacts, ") + accountName(g.account, known), onClick = { onLabel(g.id) }) }
                 InfoRow(AppIcons.Add, "New label", null, onClick = { naming = true })
             }
             InfoZone("In and out") {

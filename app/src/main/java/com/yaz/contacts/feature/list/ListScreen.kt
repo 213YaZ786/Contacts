@@ -645,7 +645,7 @@ internal fun BirthdayCardShown(birthdays: List<Triple<Contact, Long, Int?>>, onO
                                 0L -> "Today"
                                 1L -> "Tomorrow"
                                 else -> "In $wait days"
-                            } + (age?.let { " · $it" } ?: ""),
+                            } + (age?.let { ", $it" } ?: ""), // joined with a comma, as AOSP Dialer's CallLogEntryText.java (https://android.googlesource.com/platform/packages/apps/Dialer/+/refs/heads/main/java/com/android/dialer/calllogutils/CallLogEntryText.java)
                             style = MaterialTheme.typography.bodySmall,
                             color = if (wait == 0L) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
