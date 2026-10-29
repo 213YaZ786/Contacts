@@ -5,8 +5,10 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import android.nfc.NdefMessage
 import android.nfc.NfcAdapter
 import android.nfc.cardemulation.CardEmulation
+import android.nfc.tech.IsoDep
 import android.nfc.tech.Ndef
 import android.provider.Settings
 import androidx.compose.animation.core.Animatable
@@ -205,6 +207,17 @@ fun TapScreen(give: Boolean, own: Boolean = true, me: Details?, mePhoto: ImageBi
         }
         // Or a reader of the other phone's card.
         if (adapter != null && receiving && activity != null) DisposableEffect(Unit) {
+            // From https://github.com/sameerasw/MeDrop/blob/main/app/src/main/java/com/sameerasw/medrop/utils/MeDropNfcManager.kt (MIT), enableReaderMode:
+            // the standard NDEF read first, then the ISO-DEP fallback (SELECT AID, SELECT E104, NLEN, chunks of 240).
+            // Changed: a length over 64 KB refused before reading; the answer checked as 9000, an empty or short answer
+            // ending the read; IsoDep closed by use; only a record of type text/vcard or text/x-vcard, at most 64 KB,
+            // is taken (MeDrop's "contains BEGIN:VCARD" test and its raw-bytes fallback are left out).
+            // The platform sounds stay off (FLAG_READER_NO_PLATFORM_SOUNDS) as the app gives its own haptics.
+            val cardOf = { message: NdefMessage? ->
+                message?.records?.firstOrNull { it.toMimeType() in setOf("text/vcard", "text/x-vcard") }
+                    ?.payload?.takeIf { it.size <= 64 * 1024 }?.decodeToString()
+            }
+            val succeeded = { answer: ByteArray -> answer.size >= 2 && answer[answer.size - 2] == 0x90.toByte() && answer[answer.size - 1] == 0x00.toByte() }
             runCatching {
                 adapter.enableReaderMode(
                     activity,
@@ -212,13 +225,39 @@ fun TapScreen(give: Boolean, own: Boolean = true, me: Details?, mePhoto: ImageBi
                         val text = runCatching {
                             Ndef.get(tag)?.use { ndef ->
                                 ndef.connect()
-                                ndef.ndefMessage?.records?.firstOrNull { it.toMimeType() in setOf("text/vcard", "text/x-vcard") }
-                                    ?.payload?.takeIf { it.size <= 64 * 1024 }?.decodeToString()
+                                cardOf(ndef.ndefMessage)
+                            }
+                        }.getOrNull() ?: runCatching {
+                            IsoDep.get(tag)?.use inFallback@{ isoDep ->
+                                isoDep.connect()
+                                // SELECT the NDEF application D2760000850101, then the file E104.
+                                val selectAid = byteArrayOf(0x00, 0xA4.toByte(), 0x04, 0x00, 0x07, 0xD2.toByte(), 0x76, 0x00, 0x00, 0x85.toByte(), 0x01, 0x01)
+                                if (!succeeded(isoDep.transceive(selectAid))) return@inFallback null
+                                val selectFile = byteArrayOf(0x00, 0xA4.toByte(), 0x00, 0x0C, 0x02, 0xE1.toByte(), 0x04)
+                                if (!succeeded(isoDep.transceive(selectFile))) return@inFallback null
+                                // NLEN: the message's length, on the first two bytes.
+                                val nlenAnswer = isoDep.transceive(byteArrayOf(0x00, 0xB0.toByte(), 0x00, 0x00, 0x02))
+                                if (nlenAnswer.size < 4 || !succeeded(nlenAnswer)) return@inFallback null
+                                val nlen = ((nlenAnswer[0].toInt() and 0xFF) shl 8) or (nlenAnswer[1].toInt() and 0xFF)
+                                if (nlen !in 1..64 * 1024) return@inFallback null
+                                var offset = 2
+                                val data = java.io.ByteArrayOutputStream()
+                                while (data.size() < nlen && offset <= 0xFFFF) {
+                                    val chunk = minOf(nlen - data.size(), 240)
+                                    val answer = isoDep.transceive(
+                                        byteArrayOf(0x00, 0xB0.toByte(), (offset shr 8).toByte(), offset.toByte(), chunk.toByte())
+                                    )
+                                    if (!succeeded(answer) || answer.size == 2) return@inFallback null
+                                    data.write(answer, 0, minOf(answer.size - 2, nlen - data.size()))
+                                    offset += answer.size - 2
+                                }
+                                if (data.size() != nlen) null else cardOf(NdefMessage(data.toByteArray()))
                             }
                         }.getOrNull()
                         if (text != null) activity.runOnUiThread { received(text) }
                     },
-                    NfcAdapter.FLAG_READER_NFC_A or NfcAdapter.FLAG_READER_NFC_B or NfcAdapter.FLAG_READER_NFC_F or NfcAdapter.FLAG_READER_NFC_V,
+                    NfcAdapter.FLAG_READER_NFC_A or NfcAdapter.FLAG_READER_NFC_B or NfcAdapter.FLAG_READER_NFC_F or NfcAdapter.FLAG_READER_NFC_V or
+                        NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS,
                     null
                 )
             }

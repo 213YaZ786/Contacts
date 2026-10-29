@@ -206,13 +206,6 @@
                 <data android:mimeType="text/x-vcard" />
                 <data android:mimeType="text/directory" />
             </intent-filter>
-            <!-- A card read from another phone or a tag by touching it. -->
-            <intent-filter>
-                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/vcard" />
-                <data android:mimeType="text/x-vcard" />
-            </intent-filter>
             <!-- A number or an address: its contact when there is one, else a new one. -->
             <intent-filter>
                 <action android:name="com.android.contacts.action.SHOW_OR_CREATE_CONTACT" />
@@ -221,6 +214,23 @@
                 <data android:scheme="mailto" />
             </intent-filter>
         </activity>
+
+        <!-- A card read from another phone or a tag by touching it. As in AOSP Contacts'
+             NfcImportVCardActivity (android.googlesource.com/platform/packages/apps/Contacts,
+             AndroidManifest.xml), only Android's NFC service may deliver it (DISPATCH_NFC_MESSAGE),
+             so no other app can send a forged card. -->
+        <activity-alias
+            android:name=".NfcCard"
+            android:targetActivity=".HandOffActivity"
+            android:exported="true"
+            android:permission="android.permission.DISPATCH_NFC_MESSAGE">
+            <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/vcard" />
+                <data android:mimeType="text/x-vcard" />
+            </intent-filter>
+        </activity-alias>
 
         <!-- What the user's contacts share through the messaging app's encrypted
              chat, handed over by that app only (signature permission); kept as

@@ -11,19 +11,23 @@ import android.os.Bundle
  */
 class CardTagService : HostApduService() {
 
-    private var tag: Type4Tag? = null
+    // The card is asked of Sharing at each selection of the application, and "sent" is told when the
+    // reader has read the NDEF file to its last byte.
+    private val tag = Type4Tag(ndefMessageProvider = { Sharing.message() }, onNdefRead = { Sharing.read() })
 
+    // From https://github.com/sameerasw/MeDrop/blob/main/app/src/main/java/com/sameerasw/medrop/services/MeDropHceService.kt (MIT),
+    // processCommandApdu: the commands go to the tag, and the read of the NDEF file is what is noted.
+    // Changed: silent (file not found) unless the sharing screen is open.
     override fun processCommandApdu(command: ByteArray, extras: Bundle?): ByteArray {
-        val message = Sharing.message() ?: return Type4Tag.NOT_FOUND
-        // A new reader starts from the application's selection.
-        if (tag == null || command.size > 1 && command[1] == 0xA4.toByte() && command.getOrNull(2) == 0x04.toByte()) tag = Type4Tag(message)
-        val answer = tag!!.process(command)
-        return answer
+        if (Sharing.message() == null) return Type4Tag.NOT_FOUND
+        return tag.process(command)
     }
 
+    // From https://github.com/sameerasw/MeDrop/blob/main/app/src/main/java/com/sameerasw/medrop/services/MeDropHceService.kt (MIT),
+    // onDeactivated: only the selection is forgotten. Changed: nothing is announced here, a link lost
+    // without a read is not a card sent.
     override fun onDeactivated(reason: Int) {
-        tag = null
-        Sharing.read()
+        tag.onDeactivated()
     }
 }
 
