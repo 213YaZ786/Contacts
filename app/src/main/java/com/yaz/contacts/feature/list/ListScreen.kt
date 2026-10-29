@@ -401,7 +401,9 @@ private fun LabelChoice(groups: List<com.yaz.contacts.core.contacts.Group>, onDi
             if (groups.isEmpty()) Text("No label yet: make one in Tidy up.")
             else androidx.compose.foundation.layout.Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 groups.forEach { g ->
-                    com.yaz.contacts.ui.component.ZoneSurface(shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp), onClick = { onPick(g.id) }, modifier = Modifier.fillMaxWidth()) {
+                    // A choice inside a dialog: Material 3's large corner, 16 dp (ShapeDefaults,
+                    // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+                    com.yaz.contacts.ui.component.ZoneSurface(shape = androidx.compose.material3.ShapeDefaults.Large, onClick = { onPick(g.id) }, modifier = Modifier.fillMaxWidth()) {
                         Text(g.title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp))
                     }
                 }
@@ -565,7 +567,7 @@ internal fun SharedWithYouCard(people: List<Contact>, onOpen: (Long) -> Unit) {
     val drafts: com.yaz.contacts.core.handoff.Drafts = koinInject()
     val nav = LocalImport.current
     com.yaz.contacts.ui.component.ZoneSurface(
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+        shape = androidx.compose.material3.ShapeDefaults.ExtraLarge,
         accent = true,
         modifier = Modifier.widthIn(max = LineWidth).fillMaxWidth()
     ) {
@@ -611,7 +613,7 @@ val LocalImport = androidx.compose.runtime.staticCompositionLocalOf<(Long) -> Un
 internal fun BirthdayCardShown(birthdays: List<Triple<Contact, Long, Int?>>, onOpen: (Long) -> Unit) {
     val context = LocalContext.current
     com.yaz.contacts.ui.component.ZoneSurface(
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+        shape = androidx.compose.material3.ShapeDefaults.ExtraLarge,
         modifier = Modifier.widthIn(max = LineWidth).fillMaxWidth()
     ) {
         androidx.compose.foundation.layout.Column(Modifier.padding(vertical = 6.dp)) {

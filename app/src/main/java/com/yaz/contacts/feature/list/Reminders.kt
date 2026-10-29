@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -56,7 +56,9 @@ fun KeepInTouch(people: List<Contact>, onOpen: (Long) -> Unit) {
         }.sortedByDescending { it.second }
     }
     if (due.isEmpty()) return
-    ZoneSurface(shape = RoundedCornerShape(24.dp), modifier = Modifier.widthIn(max = LineWidth).fillMaxWidth()) {
+    // A card on the page: Material 3's extra large corner, 28 dp (ShapeDefaults,
+    // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+    ZoneSurface(shape = ShapeDefaults.ExtraLarge, modifier = Modifier.widthIn(max = LineWidth).fillMaxWidth()) {
         Column(Modifier.padding(vertical = 6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp)) {
                 Icon(AppIcons.History, null, tint = MaterialTheme.colorScheme.primary)
@@ -90,7 +92,7 @@ fun TalkedOften(people: List<Contact>, onSave: (String) -> Unit) {
     val often by produceState<List<Pair<String, Int>>>(emptyList(), saved.size) { value = Talks.frequent(context) }
     val shown = often.filter { (n, _) -> n.filter(Char::isDigit).takeLast(9) !in saved && n !in settings.notToSave }.take(5)
     if (shown.isEmpty()) return
-    ZoneSurface(shape = RoundedCornerShape(24.dp), modifier = Modifier.widthIn(max = LineWidth).fillMaxWidth()) {
+    ZoneSurface(shape = ShapeDefaults.ExtraLarge, modifier = Modifier.widthIn(max = LineWidth).fillMaxWidth()) {
         Column(Modifier.padding(vertical = 6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp)) {
                 Icon(AppIcons.PersonAdd, null, tint = MaterialTheme.colorScheme.primary)

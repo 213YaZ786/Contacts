@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -86,7 +86,9 @@ fun ActionTile(icon: ImageVector, label: String, tint: Color? = null, accent: Bo
     val press = remember { MutableInteractionSource() }
     val pressed by press.collectIsPressedAsState()
     val sink by animateFloatAsState(if (pressed) 0.92f else 1f, spring(dampingRatio = 0.45f, stiffness = 700f), label = "sink")
-    val shape = RoundedCornerShape(22.dp)
+    // A tile on the page: Material 3's extra large corner, 28 dp (ShapeDefaults,
+    // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+    val shape = ShapeDefaults.ExtraLarge
     ZoneSurface(
         shape = shape,
         accent = accent,

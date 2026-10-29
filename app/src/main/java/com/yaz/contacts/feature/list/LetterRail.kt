@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -73,7 +73,9 @@ fun LetterRail(letters: List<String>, onLetter: (String) -> Unit, modifier: Modi
         }
         Spacer(Modifier.width(6.dp))
         ZoneSurface(
-            shape = RoundedCornerShape(14.dp),
+            // The rail's chip: Material 3's large corner, 16 dp (ShapeDefaults,
+            // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+            shape = ShapeDefaults.Large,
             modifier = Modifier
                 .width(28.dp)
                 .onSizeChanged { height = it.height.toFloat().coerceAtLeast(1f) }

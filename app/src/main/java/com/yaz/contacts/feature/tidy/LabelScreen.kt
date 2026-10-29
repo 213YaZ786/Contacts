@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -162,7 +162,9 @@ fun LabelScreen(id: Long, onBack: () -> Unit, onOpen: (Long) -> Unit) {
         ZoneAlertDialog(
             onDismissRequest = { renaming = false },
             title = { Text("Rename") },
-            text = { OutlinedTextField(title, { title = it.take(60) }, singleLine = true, shape = RoundedCornerShape(16.dp)) },
+            // A field inside a dialog: Material 3's large corner, 16 dp (ShapeDefaults,
+            // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+            text = { OutlinedTextField(title, { title = it.take(60) }, singleLine = true, shape = ShapeDefaults.Large) },
             confirmButton = {
                 BoldButton(filled = true, onClick = {
                     renaming = false

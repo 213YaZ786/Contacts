@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -89,7 +89,9 @@ fun ChooseScreen(adding: Details?, onClose: () -> Unit, onNew: () -> Unit, onExi
         ) {
             // The usual case first and clearly: a new person, in a large filled card.
             item(key = "new") {
-                val shape = RoundedCornerShape(28.dp)
+                // A tile on the page: Material 3's extra large corner, 28 dp (ShapeDefaults,
+                // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+                val shape = ShapeDefaults.ExtraLarge
                 androidx.compose.material3.Surface(
                     shape = shape,
                     color = MaterialTheme.colorScheme.primary,

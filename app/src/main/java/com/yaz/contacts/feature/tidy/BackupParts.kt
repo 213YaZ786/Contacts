@@ -6,7 +6,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -158,13 +158,15 @@ fun PassphraseDialog(twice: Boolean, title: String, onDismiss: () -> Unit, onDon
                 OutlinedTextField(
                     first, { first = it.take(200) }, label = { Text("Passphrase") }, singleLine = true,
                     visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()
+                    // A field inside a dialog: Material 3's large corner, 16 dp (ShapeDefaults,
+                    // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+                    shape = ShapeDefaults.Large, modifier = Modifier.fillMaxWidth()
                 )
                 if (twice) OutlinedTextField(
                     second, { second = it.take(200) }, label = { Text("Once more") }, singleLine = true,
                     visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     isError = second.isNotEmpty() && second != first,
-                    shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()
+                    shape = ShapeDefaults.Large, modifier = Modifier.fillMaxWidth()
                 )
             }
         },

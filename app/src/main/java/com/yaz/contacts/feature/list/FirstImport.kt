@@ -22,7 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -93,7 +93,9 @@ private fun Steps(title: String, steps: List<String>) {
     val haptics = rememberHaptics()
     var open by rememberSaveable(title) { mutableStateOf(false) }
     val turn by animateFloatAsState(if (open) 180f else 0f, spring(dampingRatio = 0.6f, stiffness = 500f), label = "turn")
-    ZoneSurface(shape = RoundedCornerShape(22.dp), onClick = { haptics.tick(); open = !open }, modifier = Modifier.fillMaxWidth()) {
+    // A card on the page: Material 3's extra large corner, 28 dp (ShapeDefaults,
+    // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+    ZoneSurface(shape = ShapeDefaults.ExtraLarge, onClick = { haptics.tick(); open = !open }, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))

@@ -22,7 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -108,7 +108,9 @@ fun ScanScreen(onBack: () -> Unit, onCard: (String) -> Unit) {
                 val o = Offset((size.width - side) / 2f, (size.height - side) / 2f)
                 drawRoundRect(Color.White.copy(alpha = 0.9f), o, Size(side, side), CornerRadius(28.dp.toPx()), style = Stroke(3.dp.toPx()))
             }
-            FloatingPane(shape = RoundedCornerShape(24.dp), modifier = Modifier.align(Alignment.BottomCenter).padding(24.dp).widthIn(max = 420.dp)) {
+            // A pane over the camera: Material 3's extra large corner, 28 dp (ShapeDefaults,
+            // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+            FloatingPane(shape = ShapeDefaults.ExtraLarge, modifier = Modifier.align(Alignment.BottomCenter).padding(24.dp).widthIn(max = 420.dp)) {
                 Text(
                     if (wrong) "This QR code is not a contact." else "Point at the contact's QR code on their phone.",
                     style = MaterialTheme.typography.bodyLarge,

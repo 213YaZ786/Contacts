@@ -18,7 +18,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -124,7 +124,9 @@ fun FavoriteCards(favorites: List<Contact>, padding: PaddingValues, onOpen: (Lon
             // The two of a row as tall as each other, the actions on one line.
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Max)) {
                 row.forEach { c ->
-                    val shape = RoundedCornerShape(28.dp)
+                    // A card on the page: Material 3's extra large corner, 28 dp (ShapeDefaults,
+                    // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+                    val shape = ShapeDefaults.ExtraLarge
                     ZoneSurface(
                         shape = shape,
                         modifier = Modifier.weight(1f).fillMaxHeight().clip(shape).combinedClickable(

@@ -25,7 +25,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -160,7 +160,9 @@ fun PosterScreen(id: Long, onBack: () -> Unit) {
             // The name's styles, each shown in its own letters.
             EvenRows(minSlot = 56.dp, gap = 8.dp, modifier = Modifier.widthIn(max = 520.dp)) {
                 POSTER_STYLES.forEach { style ->
-                    ZoneSurface(shape = RoundedCornerShape(16.dp), accent = look.posterStyle == style, onClick = {
+                    // A small choice, 16 dp: Material 3's large corner (ShapeDefaults,
+                    // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+                    ZoneSurface(shape = ShapeDefaults.Large, accent = look.posterStyle == style, onClick = {
                         haptics.tick()
                         look = look.copy(posterStyle = style)
                     }) {
@@ -211,7 +213,7 @@ fun Poster(name: String, photo: ImageBitmap?, look: Look, modifier: Modifier, on
                 scaleX = pop.value
                 scaleY = pop.value
             }
-            .clip(RoundedCornerShape(32.dp))
+            .clip(ShapeDefaults.ExtraLarge)
             .background(Brush.radialGradient(listOf(tone.copy(alpha = 0.95f), darker(tone)), radius = 900f))
     ) {
         if (photo != null) {

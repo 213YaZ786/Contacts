@@ -18,7 +18,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -364,7 +364,9 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koinViewMo
                             val on = settings.shownAccounts.isEmpty() || a.key in settings.shownAccounts
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable {
+                                // A row inside a dialog: Material 3's large corner, 16 dp (ShapeDefaults,
+                                // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+                                modifier = Modifier.fillMaxWidth().clip(ShapeDefaults.Large).clickable {
                                     val current = if (settings.shownAccounts.isEmpty()) dialogAccounts.map { it.key }.toSet() else settings.shownAccounts
                                     val next = if (on) current - a.key else current + a.key
                                     // Every account ticked, or none, is all.

@@ -33,7 +33,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -362,7 +362,9 @@ private fun Stage(me: Details?, mePhoto: ImageBitmap?, receiving: Boolean, touch
         else -> me?.look?.color?.takeIf { it != 0 }?.let { Color(it) } ?: accent
     }
     BoxWithConstraints(modifier) {
-        val shape = RoundedCornerShape(30.dp)
+        // The card: Material 3's extra large corner, 28 dp (ShapeDefaults,
+        // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+        val shape = ShapeDefaults.ExtraLarge
         // The wave: rings spreading from where the card enters or leaves,
         // drawn past the poster's edges, as on water.
         Canvas(Modifier.fillMaxSize()) {

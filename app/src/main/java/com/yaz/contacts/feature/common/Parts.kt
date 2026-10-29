@@ -28,7 +28,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -85,7 +85,9 @@ fun PersonLine(
     trailing: (@Composable () -> Unit)? = null
 ) {
     val haptics = rememberHaptics()
-    val shape = RoundedCornerShape(22.dp)
+    // A line on the page: Material 3's extra large corner, 28 dp (ShapeDefaults,
+    // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+    val shape = ShapeDefaults.ExtraLarge
     ZoneSurface(
         shape = shape,
         accent = selected,
@@ -134,7 +136,7 @@ fun FaceTile(name: String, photo: String?, onOpen: () -> Unit, onLongPress: () -
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(ShapeDefaults.ExtraLarge)
             .combinedClickable(
                 onClick = {
                     haptics.tick()

@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import com.yaz.contacts.ui.component.BoldButton
@@ -101,7 +101,9 @@ fun QrDialog(d: Details, onDismiss: () -> Unit) {
                             scaleY = pop.value
                         }
                         // Dark on white whatever the theme: cameras read it best so.
-                        .clip(RoundedCornerShape(20.dp))
+                        // Inside a dialog: Material 3's large corner, 16 dp (ShapeDefaults,
+                        // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+                        .clip(ShapeDefaults.Large)
                         .background(Color.White)
                         .padding(14.dp)
                         .semantics { contentDescription = "QR code of ${d.display}" },
@@ -187,7 +189,7 @@ fun MonogramDialog(name: String, current: Look, onDismiss: () -> Unit, onPick: (
                         onValueChange = { v -> look = look.copy(letters = v.filter { it.isLetterOrDigit() }.take(2).uppercase(), emoji = if (v.isNotBlank()) "" else look.emoji) },
                         label = { Text("Letters") },
                         singleLine = true,
-                        shape = RoundedCornerShape(16.dp),
+                        shape = ShapeDefaults.Large,
                         modifier = Modifier.weight(1f)
                     )
                     OutlinedTextField(
@@ -196,13 +198,13 @@ fun MonogramDialog(name: String, current: Look, onDismiss: () -> Unit, onPick: (
                         onValueChange = { v -> look = look.copy(emoji = firstEmoji(v), letters = if (v.isNotBlank()) "" else look.letters) },
                         label = { Text("Emoji") },
                         singleLine = true,
-                        shape = RoundedCornerShape(16.dp),
+                        shape = ShapeDefaults.Large,
                         modifier = Modifier.weight(1f)
                     )
                 }
                 EvenRows(minSlot = 52.dp, gap = 6.dp) {
                     MONOGRAM_FONTS.forEach { f ->
-                        ZoneSurface(shape = RoundedCornerShape(14.dp), accent = (look.font.ifBlank { "classic" }) == f, onClick = {
+                        ZoneSurface(shape = ShapeDefaults.Large, accent = (look.font.ifBlank { "classic" }) == f, onClick = {
                             haptics.tick()
                             look = look.copy(font = if (f == "classic") "" else f)
                         }) {
@@ -273,7 +275,7 @@ fun VibrationDialog(current: String, onDismiss: () -> Unit, onPick: (String) -> 
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(ShapeDefaults.Large)
                             .clickable {
                                 selected = name
                                 play(name)

@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import com.yaz.contacts.ui.component.QuietButton
@@ -154,7 +154,9 @@ fun PickScreen(kind: PickKind, title: String, onClose: () -> Unit, onPicked: (Ur
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         r.forEach { row ->
-                            ZoneSurface(shape = RoundedCornerShape(20.dp), onClick = {
+                            // A choice inside a dialog: Material 3's large corner, 16 dp (ShapeDefaults,
+                            // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+                            ZoneSurface(shape = ShapeDefaults.Large, onClick = {
                                 choosing = null
                                 onPicked(row.uri)
                             }, modifier = Modifier.fillMaxWidth()) {

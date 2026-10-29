@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -83,7 +83,9 @@ fun SetupZone(modifier: Modifier = Modifier) {
     val step = setup.step ?: return
 
     ZoneSurface(
-        shape = RoundedCornerShape(24.dp),
+        // A card on the page: Material 3's extra large corner, 28 dp (ShapeDefaults,
+        // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+        shape = ShapeDefaults.ExtraLarge,
         modifier = modifier.widthIn(max = 520.dp).fillMaxWidth().padding(horizontal = 16.dp)
     ) {
         Column(

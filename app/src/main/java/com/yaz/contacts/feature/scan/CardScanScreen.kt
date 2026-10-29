@@ -24,7 +24,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -152,7 +152,9 @@ fun CardScanScreen(onBack: () -> Unit, onDetails: (Details) -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp).widthIn(max = 520.dp).fillMaxWidth()
                 ) {
-                    FloatingPane(shape = RoundedCornerShape(22.dp)) {
+                    // A pane over the camera: Material 3's extra large corner, 28 dp (ShapeDefaults,
+                    // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+                    FloatingPane(shape = ShapeDefaults.ExtraLarge) {
                         Text(
                             if (failed) "No name, number or email could be read. Try closer, in good light." else "Fit the card in the frame, flat and well lit.",
                             style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center,

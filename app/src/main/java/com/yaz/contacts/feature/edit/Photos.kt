@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import com.yaz.contacts.ui.component.BoldButton
 import com.yaz.contacts.ui.component.QuietButton
@@ -57,7 +57,9 @@ fun CropDialog(bitmap: Bitmap, onDismiss: () -> Unit, onDone: (Bitmap) -> Unit) 
                     .widthIn(max = 320.dp)
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .clip(RoundedCornerShape(20.dp))
+                    // A picture inside a dialog: Material 3's large corner, 16 dp (ShapeDefaults,
+                    // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+                    .clip(ShapeDefaults.Large)
                     .onSizeChanged { box = it }
                     .pointerInput(bitmap) {
                         detectTransformGestures { _, move, gesture, _ ->

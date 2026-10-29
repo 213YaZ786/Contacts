@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -188,7 +189,9 @@ fun TidyScreen(onBack: () -> Unit, onOpen: (Long) -> Unit, onTrash: () -> Unit, 
             title = { Text("New label") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(title, { title = it.take(60) }, label = { Text("Name") }, singleLine = true, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth())
+                    // A field inside a dialog: Material 3's large corner, 16 dp (ShapeDefaults,
+                    // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+                    OutlinedTextField(title, { title = it.take(60) }, label = { Text("Name") }, singleLine = true, shape = ShapeDefaults.Large, modifier = Modifier.fillMaxWidth())
                     if (accounts.size > 1) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         accounts.forEach { a ->
                             ZoneSurface(shape = RoundedCornerShape(50), accent = a.key == account?.key, onClick = { account = a }) {

@@ -35,7 +35,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import com.yaz.contacts.ui.component.BoldButton
@@ -377,7 +377,9 @@ private fun Group(title: String, content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth().padding(start = 12.dp, top = 16.dp, bottom = 6.dp)
     )
     // The size animates inside the zone: around it, animateContentSize would clip the soft shadow square.
-    ZoneSurface(shape = RoundedCornerShape(24.dp), modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth()) {
+    // A group on the page: Material 3's extra large corner, 28 dp (ShapeDefaults,
+    // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+    ZoneSurface(shape = ShapeDefaults.ExtraLarge, modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth()) {
         Column(Modifier.animateContentSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
     }
 }
@@ -403,7 +405,7 @@ private fun Input(
         singleLine = single,
         minLines = if (single) 1 else 3,
         keyboardOptions = KeyboardOptions(keyboardType = keyboard, capitalization = if (capital) KeyboardCapitalization.Words else KeyboardCapitalization.None),
-        shape = RoundedCornerShape(16.dp),
+        shape = ShapeDefaults.Large,
         colors = OutlinedTextFieldDefaults.colors(
             unfocusedContainerColor = Color.Transparent,
             focusedContainerColor = Color.Transparent,
@@ -460,7 +462,7 @@ private fun Rows(
 private fun AddRow(label: String, onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).clickable(onClick = onClick).padding(horizontal = 8.dp, vertical = 10.dp)
+        modifier = Modifier.fillMaxWidth().clip(ShapeDefaults.Large).clickable(onClick = onClick).padding(horizontal = 8.dp, vertical = 10.dp)
     ) {
         Icon(AppIcons.Add, null, tint = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.width(12.dp))
@@ -481,7 +483,7 @@ private fun KindDialog(field: Field, kind: Int, custom: String?, onDismiss: () -
                 field.kinds.forEach { k ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onPick(k, null) }.padding(vertical = 8.dp, horizontal = 4.dp)
+                        modifier = Modifier.fillMaxWidth().clip(ShapeDefaults.Large).clickable { onPick(k, null) }.padding(vertical = 8.dp, horizontal = 4.dp)
                     ) {
                         GlassRadio(selected = k == kind, onClick = null)
                         Text(field.label(context.resources, k, null), modifier = Modifier.padding(start = 12.dp))
@@ -547,7 +549,7 @@ private fun DatesGroup(items: List<Labelled>, onChange: (List<Labelled>) -> Unit
     Group("Dates") {
         items.forEachIndexed { i, e ->
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).clickable { picking = i }.padding(horizontal = 8.dp, vertical = 8.dp)) {
+                Column(Modifier.weight(1f).clip(ShapeDefaults.Large).clickable { picking = i }.padding(horizontal = 8.dp, vertical = 8.dp)) {
                     Text(Field.EVENT.label(context.resources, e.kind, e.custom), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(Dates.parse(e.value)?.let { Dates.spoken(it) } ?: "Choose a date", style = MaterialTheme.typography.bodyLarge)
                 }

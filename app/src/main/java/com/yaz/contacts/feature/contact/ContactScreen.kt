@@ -31,7 +31,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -415,7 +415,9 @@ private fun SharedCard(d: Details) {
         return
     }
     Spacer(Modifier.height(14.dp))
-    ZoneSurface(shape = RoundedCornerShape(24.dp), accent = true, modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth()) {
+    // A card on the page: Material 3's extra large corner, 28 dp (ShapeDefaults,
+    // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
+    ZoneSurface(shape = ShapeDefaults.ExtraLarge, accent = true, modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(AppIcons.Update, null)
@@ -482,7 +484,7 @@ private fun KeepBackDialog(d: Details, onDismiss: () -> Unit) {
         val on = key !in settings.keptBack
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).combinedClickableCompat {
+            modifier = Modifier.fillMaxWidth().clip(ShapeDefaults.Large).combinedClickableCompat {
                 haptics.toggle(!on)
                 settingsStore.update { it.copy(keptBack = if (on) it.keptBack + key else it.keptBack - key) }
             }.padding(vertical = 6.dp)
@@ -586,7 +588,7 @@ private fun Actions(d: Details, onQr: () -> Unit, onScan: () -> Unit, onTap: () 
 
 @Composable
 private fun ShareChoice(icon: ImageVector, title: String, note: String, onClick: () -> Unit) {
-    ZoneSurface(shape = RoundedCornerShape(20.dp), onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+    ZoneSurface(shape = ShapeDefaults.Large, onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
             Column(Modifier.padding(start = 14.dp)) {
@@ -734,7 +736,7 @@ private fun OnThisPhone(d: Details, onRingtone: () -> Unit, onVoicemail: (Boolea
         val bypass = chosenBypass ?: d.look.bypass
         val flipVoicemail = { on: Boolean -> chosenVoicemail = on; onVoicemail(on) }
         val flipBypass = { on: Boolean -> chosenBypass = on; onBypass(on) }
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).combinedClickableCompat { flipVoicemail(!toVoicemail) }.padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(ShapeDefaults.Large).combinedClickableCompat { flipVoicemail(!toVoicemail) }.padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp)) {
             Icon(AppIcons.Voicemail, null, tint = MaterialTheme.colorScheme.primary)
             Column(Modifier.weight(1f).padding(start = 16.dp)) {
                 Text("Send their calls to voicemail", style = MaterialTheme.typography.bodyLarge)
@@ -742,7 +744,7 @@ private fun OnThisPhone(d: Details, onRingtone: () -> Unit, onVoicemail: (Boolea
             }
             GlassSwitch(checked = toVoicemail, onCheckedChange = flipVoicemail)
         }
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).combinedClickableCompat { flipBypass(!bypass) }.padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(ShapeDefaults.Large).combinedClickableCompat { flipBypass(!bypass) }.padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp)) {
             Icon(AppIcons.Call, null, tint = MaterialTheme.colorScheme.primary)
             Column(Modifier.weight(1f).padding(start = 16.dp)) {
                 Text("Ring even in Do Not Disturb", style = MaterialTheme.typography.bodyLarge)
@@ -788,7 +790,7 @@ private fun MoveDialog(d: Details, onDismiss: () -> Unit, onPick: (Account) -> U
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (others.isEmpty()) Text("There is no other account on this phone. Add one in Settings > Accounts.")
                 others.forEach { a ->
-                    ZoneSurface(shape = RoundedCornerShape(18.dp), onClick = { onPick(a) }, modifier = Modifier.fillMaxWidth()) {
+                    ZoneSurface(shape = ShapeDefaults.Large, onClick = { onPick(a) }, modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(horizontal = 18.dp, vertical = 12.dp)) {
                             Text(accountLabel(a), style = MaterialTheme.typography.titleMedium)
                             if (a.type == null) Text("Not backed up", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -820,7 +822,7 @@ fun InfoZone(title: String, content: @Composable ColumnScope.() -> Unit) {
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth().padding(start = 12.dp, top = 14.dp, bottom = 6.dp)
     )
-    ZoneSurface(shape = RoundedCornerShape(24.dp), modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth()) {
+    ZoneSurface(shape = ShapeDefaults.ExtraLarge, modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth()) {
         Column(Modifier.padding(vertical = 4.dp), content = content)
     }
 }
@@ -844,7 +846,7 @@ fun InfoRow(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(ShapeDefaults.Large)
             .combinedClickable(
                 enabled = onClick != null || copy != null,
                 onClick = {
@@ -886,7 +888,7 @@ fun NumberChoice(d: Details, title: String, onDismiss: () -> Unit, onPick: (Stri
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 d.phones.distinctBy { it.value.filter(Char::isDigit).takeLast(9) }.forEach { p ->
-                    ZoneSurface(shape = RoundedCornerShape(20.dp), onClick = { onPick(p.value) }, modifier = Modifier.fillMaxWidth()) {
+                    ZoneSurface(shape = ShapeDefaults.Large, onClick = { onPick(p.value) }, modifier = Modifier.fillMaxWidth()) {
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 18.dp, end = 12.dp, top = 12.dp, bottom = 12.dp)) {
                             Column(Modifier.weight(1f)) {
                                 Text(Numbers.format(context, p.value), style = MaterialTheme.typography.titleMedium)
