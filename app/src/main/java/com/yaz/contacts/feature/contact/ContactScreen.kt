@@ -664,28 +664,15 @@ private fun OnThisPhone(d: Details, onRingtone: () -> Unit, onVoicemail: (Boolea
             "Keep in touch",
             onClick = { choosingEvery = true }
         )
-        if (choosingEvery) com.yaz.contacts.ui.component.ZoneAlertDialog(
-            onDismissRequest = { choosingEvery = false },
-            icon = { Icon(AppIcons.History, null) },
-            title = { Text("Keep in touch") },
-            text = {
-                Column {
-                    Text("Contacts reminds you when you open it, from the calls and messages of Dialer and SMS.", style = MaterialTheme.typography.bodySmall)
-                    listOf(0 to "Off", 7 to "Every week", 14 to "Every 2 weeks", 30 to "Every month", 90 to "Every 3 months").forEach { (days, label) ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).combinedClickableCompat {
-                                choosingEvery = false
-                                scope.launch { writer.save(d, d.copy(look = d.look.copy(every = days)), null) }
-                            }.padding(vertical = 8.dp)
-                        ) {
-                            GlassRadio(selected = d.look.every == days, onClick = null)
-                            Text(label, modifier = Modifier.padding(start = 12.dp))
-                        }
-                    }
-                }
-            },
-            confirmButton = { QuietButton(onClick = { choosingEvery = false }) { Text("Cancel") } }
+        // Glass capsules: Modules' ChoiceDialog (SMS's commit 8de995b is the model); a tap picks and closes.
+        if (choosingEvery) com.yaz.contacts.ui.component.ChoiceDialog(
+            title = "Keep in touch",
+            icon = AppIcons.History,
+            text = "Contacts reminds you when you open it, from the calls and messages of Dialer and SMS.",
+            options = listOf(0 to "Off", 7 to "Every week", 14 to "Every 2 weeks", 30 to "Every month", 90 to "Every 3 months"),
+            selected = d.look.every,
+            onPick = { days -> scope.launch { writer.save(d, d.copy(look = d.look.copy(every = days)), null) } },
+            onDismiss = { choosingEvery = false }
         )
         InfoRow(AppIcons.Ringtone, ringtone, "Ringtone", onClick = onRingtone)
         InfoRow(AppIcons.Message, tone, "Sound of their messages", onClick = onTone)

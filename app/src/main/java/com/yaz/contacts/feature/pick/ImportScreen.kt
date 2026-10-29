@@ -16,8 +16,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import com.yaz.contacts.ui.component.GlassRadio
-import com.yaz.contacts.ui.component.QuietButton
+import com.yaz.contacts.ui.component.ChoiceDialog
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -49,7 +48,6 @@ import com.yaz.contacts.ui.component.FloatingFrame
 import com.yaz.contacts.ui.component.FloatingPane
 import com.yaz.contacts.ui.component.FloatingTop
 import com.yaz.contacts.ui.component.LoadingMark
-import com.yaz.contacts.ui.component.ZoneAlertDialog
 import com.yaz.contacts.ui.component.rememberHaptics
 import com.yaz.contacts.ui.icon.AppIcons
 import kotlinx.coroutines.Dispatchers
@@ -162,26 +160,13 @@ fun ImportScreen(source: Uri?, text: String? = null, inPerson: Boolean = false, 
         }
     }
     if (choosingAccount) {
-        ZoneAlertDialog(
-            onDismissRequest = { choosingAccount = false },
-            title = { Text("Save in") },
-            text = {
-                Column {
-                    accounts.forEach { a ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable {
-                                account = a
-                                choosingAccount = false
-                            }.padding(vertical = 10.dp, horizontal = 4.dp)
-                        ) {
-                            GlassRadio(selected = a.key == account?.key, onClick = null)
-                            Text(accountLabel(a), modifier = Modifier.padding(start = 12.dp))
-                        }
-                    }
-                }
-            },
-            confirmButton = { QuietButton(onClick = { choosingAccount = false }) { Text("Cancel") } }
+        // Glass capsules: Modules' ChoiceDialog (SMS's commit 8de995b is the model); a tap picks and closes.
+        ChoiceDialog(
+            title = "Save in",
+            options = accounts.map { a -> a.key to accountLabel(a) },
+            selected = account?.key,
+            onPick = { key -> accounts.firstOrNull { it.key == key }?.let { account = it } },
+            onDismiss = { choosingAccount = false }
         )
     }
 }

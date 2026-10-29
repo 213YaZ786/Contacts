@@ -36,7 +36,7 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import com.yaz.contacts.ui.component.BoldButton
 import com.yaz.contacts.ui.component.GlassCheck
-import com.yaz.contacts.ui.component.GlassRadio
+import com.yaz.contacts.ui.component.ChoiceDialog
 import com.yaz.contacts.ui.component.GlassSwitch
 import com.yaz.contacts.ui.component.QuietButton
 import androidx.compose.material3.Text
@@ -228,21 +228,21 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koinViewMo
             title = "Theme",
             options = ThemeMode.entries.map { it to themeLabel(it) },
             selected = settings.themeMode,
-            onSelect = viewModel::setTheme,
+            onPick = viewModel::setTheme,
             onDismiss = { dialog = OpenDialog.NONE }
         )
         OpenDialog.TEXT_SIZE -> ChoiceDialog(
             title = "Text size",
             options = TEXT_SCALES.map { it to textScaleLabel(it) },
             selected = settings.textScale,
-            onSelect = viewModel::setTextScale,
+            onPick = viewModel::setTextScale,
             onDismiss = { dialog = OpenDialog.NONE }
         )
         OpenDialog.UPDATES -> ChoiceDialog(
             title = "Updates",
             options = UpdateMode.entries.map { it to updatesLabel(it) },
             selected = settings.updates,
-            onSelect = { mode ->
+            onPick = { mode ->
                 viewModel.setUpdates(mode)
                 // Installing needs Android's leave, asked when chosen.
                 if (mode == UpdateMode.INSTALL && !Updates.canInstall(context)) Updates.allowInstalls(context)
@@ -253,7 +253,7 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koinViewMo
             title = "Sort by",
             options = listOf(SortOrder.FIRST_NAME to "First name", SortOrder.LAST_NAME to "Last name"),
             selected = settings.sortOrder,
-            onSelect = viewModel::setSortOrder,
+            onPick = viewModel::setSortOrder,
             onDismiss = { dialog = OpenDialog.NONE }
         )
         OpenDialog.ACCOUNT -> {
@@ -263,7 +263,7 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koinViewMo
                 title = "New contacts saved in",
                 options = accounts.map { it.key to accountLabel(it) },
                 selected = settings.defaultAccount ?: (accounts.firstOrNull { it.type != null } ?: accounts.firstOrNull())?.key,
-                onSelect = { key -> key?.let(viewModel::setDefaultAccount) },
+                onPick = viewModel::setDefaultAccount,
                 onDismiss = { dialog = OpenDialog.NONE }
             )
         }
@@ -271,7 +271,7 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koinViewMo
             title = "Lock again",
             options = listOf(0 to "As soon as you leave", 60 to "1 minute after you leave", 300 to "5 minutes after you leave"),
             selected = settings.lockAfterSeconds,
-            onSelect = viewModel::setLockAfter,
+            onPick = viewModel::setLockAfter,
             onDismiss = { dialog = OpenDialog.NONE }
         )
         OpenDialog.SHOWN -> {
@@ -306,7 +306,7 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koinViewMo
             title = "Keep deleted contacts",
             options = listOf(7, 30, 90).map { it to "$it days" },
             selected = settings.trashDays,
-            onSelect = viewModel::setTrashDays,
+            onPick = viewModel::setTrashDays,
             onDismiss = { dialog = OpenDialog.NONE }
         )
         OpenDialog.NONE -> Unit
@@ -374,41 +374,6 @@ private fun SwitchRow(title: String, summary: String, checked: Boolean, enabled:
         quiet = true,
         onClick = if (enabled) ({ change(!checked) }) else null,
         trailing = { GlassSwitch(checked = checked, onCheckedChange = change, enabled = enabled) }
-    )
-}
-
-@Composable
-private fun <T> ChoiceDialog(
-    title: String,
-    options: List<Pair<T, String>>,
-    selected: T,
-    onSelect: (T) -> Unit,
-    onDismiss: () -> Unit
-) {
-    ZoneAlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            Column {
-                options.forEach { (value, label) ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable {
-                                onSelect(value)
-                                onDismiss()
-                            }
-                            .padding(vertical = 10.dp, horizontal = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        GlassRadio(selected = value == selected, onClick = null)
-                        Text(label, modifier = Modifier.padding(start = 12.dp))
-                    }
-                }
-            }
-        },
-        confirmButton = { QuietButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
 

@@ -39,6 +39,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import com.yaz.contacts.ui.component.BoldButton
+import com.yaz.contacts.ui.component.ChoiceDialog
 import com.yaz.contacts.ui.component.GlassCheck
 import com.yaz.contacts.ui.component.GlassRadio
 import com.yaz.contacts.ui.component.QuietButton
@@ -298,30 +299,14 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
         }
     }
     if (choosingAccount) {
-        ZoneAlertDialog(
-            onDismissRequest = { choosingAccount = false },
-            icon = { Icon(AppIcons.Account, null) },
-            title = { Text("Save in") },
-            text = {
-                Column {
-                    accounts.forEach { a ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable {
-                                account = a
-                                choosingAccount = false
-                            }.padding(vertical = 10.dp, horizontal = 4.dp)
-                        ) {
-                            GlassRadio(selected = a.key == account?.key, onClick = null)
-                            Column(Modifier.padding(start = 12.dp)) {
-                                Text(accountLabel(a))
-                                if (a.type == null) Text("Not backed up", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = { QuietButton(onClick = { choosingAccount = false }) { Text("Cancel") } }
+        // Glass capsules: Modules' ChoiceDialog (SMS's commit 8de995b is the model); a tap picks and closes.
+        ChoiceDialog(
+            title = "Save in",
+            icon = AppIcons.Account,
+            options = accounts.map { a -> a.key to (accountLabel(a) + if (a.type == null) ", not backed up" else "") },
+            selected = account?.key,
+            onPick = { key -> accounts.firstOrNull { it.key == key }?.let { account = it } },
+            onDismiss = { choosingAccount = false }
         )
     }
     if (leaving) {

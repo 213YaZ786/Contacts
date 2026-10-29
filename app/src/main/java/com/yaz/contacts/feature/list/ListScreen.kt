@@ -340,29 +340,17 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
         }
     }
 
-    if (choosingView) com.yaz.contacts.ui.component.ZoneAlertDialog(
-        onDismissRequest = { choosingView = false },
-        icon = { androidx.compose.material3.Icon(AppIcons.Contacts, null) },
-        title = { Text("Show") },
-        text = {
-            EvenRows(minSlot = 120.dp) {
-                TextControl("Everyone", specialFilter == null) {
-                    special = ""
-                    choosingView = false
-                }
-                if (hidden.isNotEmpty()) TextControl("Private", specialFilter == Filter.Private) {
-                    special = "private"
-                    choosingView = false
-                }
-                usedLabels.forEach { g ->
-                    TextControl(g.title, (specialFilter as? Filter.Label)?.id == g.id) {
-                        special = "label/${g.id}"
-                        choosingView = false
-                    }
-                }
-            }
-        },
-        confirmButton = { com.yaz.contacts.ui.component.BoldButton(filled = true, onClick = { choosingView = false }) { Text("Close") } }
+    // Glass capsules: Modules' ChoiceDialog (SMS's commit 8de995b is the model); a tap picks and closes.
+    // The options are the values of `special`: "" everyone, "private", "label/<id>".
+    if (choosingView) com.yaz.contacts.ui.component.ChoiceDialog(
+        title = "Show",
+        icon = AppIcons.Contacts,
+        options = listOf("" to "Everyone") +
+            (if (hidden.isNotEmpty()) listOf("private" to "Private") else emptyList()) +
+            usedLabels.map { g -> "label/${g.id}" to g.title },
+        selected = special,
+        onPick = { special = it },
+        onDismiss = { choosingView = false }
     )
     if (deleting.isNotEmpty()) {
         val those = deleting
