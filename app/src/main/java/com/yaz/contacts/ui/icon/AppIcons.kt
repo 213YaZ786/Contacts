@@ -354,6 +354,20 @@ object AppIcons {
     /** Say a name aloud. */
     val VolumeUp: ImageVector by lazy { build("VolumeUp", "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z") }
 
+    /** Pure black: Material Icons dark_mode, as SMS's AppIcons.Night (Apache-2.0, google/material-design-icons). */
+    val Night: ImageVector by lazy {
+        build("Night", "M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36c-0.98,1.37-2.58,2.26-4.4,2.26 c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z")
+    }
+
+    /** Text size: Material Icons format_size, as SMS's AppIcons.FormatSize (Apache-2.0, google/material-design-icons). */
+    val FormatSize: ImageVector by lazy { build("FormatSize", "M9 4v3h5v12h3V7h5V4H9zm-6 8h3v7h3v-7h3V9H3v3z") }
+
+    /** Theme, light and dark: Material Icons brightness_6, as SMS's AppIcons.Brightness (Apache-2.0, google/material-design-icons). */
+    val Brightness: ImageVector by lazy { build("Brightness", "M20 15.31L23.31 12 20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69zM12 18V6c3.31 0 6 2.69 6 6s-2.69 6-6 6z") }
+
+    /** Source code: Material Icons code, as SMS's AppIcons.Code (Apache-2.0, google/material-design-icons). */
+    val Code: ImageVector by lazy { build("Code", "M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z") }
+
     private fun build(name: String, pathData: String): ImageVector =
         ImageVector.Builder(
             name = name,
