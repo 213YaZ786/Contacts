@@ -84,6 +84,8 @@ import com.yaz.contacts.ui.component.FloatingAction
 import com.yaz.contacts.ui.component.FloatingFrame
 import com.yaz.contacts.ui.component.FloatingTop
 import com.yaz.contacts.ui.component.HeroGlow
+import com.yaz.contacts.ui.component.PersonActions
+import com.yaz.contacts.ui.component.PersonHeader
 import com.yaz.contacts.ui.component.LoadingMark
 import com.yaz.contacts.feature.common.ActionTile
 import com.yaz.contacts.feature.common.EvenRows
@@ -314,31 +316,45 @@ private fun Header(d: Details) {
     val pop = remember { Animatable(0.6f) }
     LaunchedEffect(Unit) { pop.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 380f)) }
     val ring = d.look.color.takeIf { it != 0 }?.let { Color(it) }
-    Box(contentAlignment = Alignment.Center, modifier = Modifier.graphicsLayer {
-        scaleX = pop.value
-        scaleY = pop.value
-        alpha = ((pop.value - 0.6f) / 0.4f).coerceIn(0f, 1f)
-    }) {
-        if (ring != null) Box(Modifier.size(146.dp)) {
-            androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) { drawCircle(ring.copy(alpha = 0.55f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4.dp.toPx())) }
-        }
-        ContactAvatar(d.display, d.photo ?: d.thumbnail, 132.dp, look = d.look.forAvatar())
-    }
-    Spacer(Modifier.height(14.dp))
+    val context = LocalContext.current
     val phonetic = listOf(d.name.phoneticGiven, d.name.phoneticMiddle, d.name.phoneticFamily).filter { it.isNotBlank() }.joinToString(" ")
-    // The name with the way to hear it beside it, on one line; the same room
-    // on the other side keeps the name centred.
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth()) {
-        Spacer(Modifier.size(48.dp))
-        Text(d.display.ifBlank { "No name" }, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
+    val display = d.display.ifBlank { "No name" }
+    // The shared person header (ui/component/PersonHeader): the face, then the name and the number, as AOSP Contacts'
+    // QuickContactActivity.bindContactData (photo, display name, phonetic name only when there and different, setPhoneticName):
+    // https://android.googlesource.com/platform/packages/apps/Contacts/+/refs/heads/main/src/com/android/contacts/quickcontact/QuickContactActivity.java
+    PersonHeader(
+        name = display,
+        number = d.phones.firstOrNull()?.let { Numbers.format(context, it.value) },
+        modifier = Modifier.widthIn(max = 640.dp),
+        face = { size ->
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize().graphicsLayer {
+                scaleX = pop.value
+                scaleY = pop.value
+                alpha = ((pop.value - 0.6f) / 0.4f).coerceIn(0f, 1f)
+            }) {
+                // The ring lies 7 dp outside the face on each side (146 dp round 132 dp before), drawn past the box.
+                if (ring != null) androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                    drawCircle(ring.copy(alpha = 0.55f), radius = (size + 14.dp).toPx() / 2, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4.dp.toPx()))
+                }
+                ContactAvatar(d.display, d.photo ?: d.thumbnail, size, look = d.look.forAvatar())
+            }
+        },
+        extra = {
+            if (phonetic.isNotBlank() && phonetic != display) Text(phonetic, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Start)
+            ContactLines(d)
+        },
         // How their name is said: as written to be heard (phonetic), else as written, by the phone's own voice.
-        SayName(phonetic.ifBlank { d.display })
-    }
-    if (phonetic.isNotBlank()) Text(phonetic, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        badges = { SayName(phonetic.ifBlank { d.display }) }
+    )
+}
+
+/** What they are called and where they work, under the name. */
+@Composable
+private fun ContactLines(d: Details) {
     val also = listOfNotNull(d.nickname?.value?.let { "“$it”" }, d.look.pronouns.takeIf { it.isNotBlank() }).joinToString(", ") // as AOSP Dialer's CallLogEntryText.java joinSecondaryTextComponents (https://android.googlesource.com/platform/packages/apps/Dialer/+/refs/heads/main/java/com/android/dialer/calllogutils/CallLogEntryText.java)
-    if (also.isNotBlank()) Text(also, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    if (also.isNotBlank()) Text(also, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Start)
     val work = listOf(d.organization.title, d.organization.department, d.organization.company).filter { it.isNotBlank() }.joinToString(", ") // as AOSP Dialer's CallLogEntryText.java joinSecondaryTextComponents (https://android.googlesource.com/platform/packages/apps/Dialer/+/refs/heads/main/java/com/android/dialer/calllogutils/CallLogEntryText.java)
-    if (work.isNotBlank()) Text(work, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+    if (work.isNotBlank()) Text(work, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Start)
 }
 
 /** Their chat key was checked face to face in the messaging app. */
@@ -499,13 +515,18 @@ private fun Actions(d: Details, onQr: () -> Unit, onScan: () -> Unit, onTap: () 
     var choosing by remember { mutableStateOf<String?>(null) }
     var sharing by remember { mutableStateOf(false) }
     val numbers = d.phones.map { it.value }.distinctBy { it.filter(Char::isDigit).takeLast(9) }
+    // The row shared with Dialer and SMS (ui/component/PersonActions): the person's own page has no Contact tile.
+    // Several numbers: the choice dialog asks which one.
+    PersonActions(
+        number = numbers.firstOrNull(),
+        contactId = d.id,
+        contact = false,
+        onCall = { if (numbers.size == 1) Reach.call(context, numbers[0]) else choosing = "call" },
+        onMessage = if (Reach.canMessage(context)) ({ if (numbers.size == 1) Reach.message(context, numbers) else choosing = "message" }) else null,
+        modifier = Modifier.widthIn(max = 640.dp)
+    )
+    if (numbers.isNotEmpty()) Spacer(Modifier.height(10.dp))
     EvenRows(minSlot = 64.dp, modifier = Modifier.widthIn(max = 640.dp)) {
-        if (numbers.isNotEmpty()) ActionTile(AppIcons.Call, "Call", AnswerGreen) {
-            if (numbers.size == 1) Reach.call(context, numbers[0]) else choosing = "call"
-        }
-        if (numbers.isNotEmpty() && Reach.canMessage(context)) ActionTile(AppIcons.Message, "Message") {
-            if (numbers.size == 1) Reach.message(context, numbers) else choosing = "message"
-        }
         if (d.emails.isNotEmpty() && Reach.canEmail(context)) ActionTile(AppIcons.Email, "Email") {
             Reach.email(context, listOf(d.emails.first().value))
         }

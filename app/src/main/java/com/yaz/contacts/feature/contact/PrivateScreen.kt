@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.yaz.contacts.core.dial.Numbers
 import com.yaz.contacts.core.handoff.Reach
 import com.yaz.contacts.core.security.SafeImages
 import com.yaz.contacts.data.contacts.ContactStore
@@ -52,6 +53,8 @@ import com.yaz.contacts.ui.component.EmptyZone
 import com.yaz.contacts.ui.component.FloatingAction
 import com.yaz.contacts.ui.component.FloatingFrame
 import com.yaz.contacts.ui.component.FloatingTop
+import com.yaz.contacts.ui.component.PersonActions
+import com.yaz.contacts.ui.component.PersonHeader
 import com.yaz.contacts.ui.component.ZoneAlertDialog
 import com.yaz.contacts.ui.component.rememberHaptics
 import com.yaz.contacts.ui.icon.AppIcons
@@ -94,19 +97,34 @@ fun PrivateScreen(id: String, onBack: () -> Unit, onPublic: (Long) -> Unit) {
             modifier = Modifier.fillMaxSize().verticalScroll(pageScroll).padding(horizontal = 16.dp)
         ) {
             Spacer(Modifier.height(padding.calculateTopPadding() + 8.dp))
-            Box(contentAlignment = Alignment.BottomEnd) {
-                photo.let { p -> if (p != null) Image(p, null, contentScale = ContentScale.Crop, modifier = Modifier.size(132.dp).clip(CircleShape))
-                else ContactAvatar(d.display, null, 132.dp, look = d.look.forAvatar()) }
-                Icon(AppIcons.Lock, "Private", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
-            }
-            Spacer(Modifier.height(12.dp))
-            Text(d.display.ifBlank { d.name.display() }, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
-            Text("Only in Contacts: other apps do not see them", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-            Spacer(Modifier.height(16.dp))
             val numbers = d.phones.map { it.value }
+            // The shared person header (ui/component/PersonHeader), as in Dialer's NumberScreen; the lock stays on the face.
+            PersonHeader(
+                name = d.display.ifBlank { d.name.display() },
+                number = numbers.firstOrNull()?.let { Numbers.format(context, it) },
+                modifier = Modifier.widthIn(max = 640.dp),
+                face = { size ->
+                    Box(contentAlignment = Alignment.BottomEnd) {
+                        photo.let { p -> if (p != null) Image(p, null, contentScale = ContentScale.Crop, modifier = Modifier.size(size).clip(CircleShape))
+                        else ContactAvatar(d.display, null, size, look = d.look.forAvatar()) }
+                        // 28 dp on a 132 dp face before: the same share of the face now.
+                        Icon(AppIcons.Lock, "Private", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(size * 28 / 132))
+                    }
+                },
+                extra = { Text("Only in Contacts: other apps do not see them", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Start) }
+            )
+            Spacer(Modifier.height(16.dp))
+            // A private person is not in Android's contacts: id -2 and no Contact or Add contact tile.
+            PersonActions(
+                number = numbers.firstOrNull(),
+                contactId = -2L,
+                contact = false,
+                onCall = { Reach.call(context, numbers.first()) },
+                onMessage = if (Reach.canMessage(context)) ({ Reach.message(context, numbers.take(1)) }) else null,
+                modifier = Modifier.widthIn(max = 640.dp)
+            )
+            if (numbers.isNotEmpty()) Spacer(Modifier.height(10.dp))
             EvenRows(minSlot = 64.dp, modifier = Modifier.widthIn(max = 640.dp)) {
-                if (numbers.isNotEmpty()) ActionTile(AppIcons.Call, "Call", AnswerGreen) { Reach.call(context, numbers.first()) }
-                if (numbers.isNotEmpty() && Reach.canMessage(context)) ActionTile(AppIcons.Message, "Message") { Reach.message(context, numbers.take(1)) }
                 if (d.emails.isNotEmpty() && Reach.canEmail(context)) ActionTile(AppIcons.Email, "Email") { Reach.email(context, listOf(d.emails.first().value)) }
                 ActionTile(AppIcons.Contacts, "Make visible") {
                     scope.launch {
