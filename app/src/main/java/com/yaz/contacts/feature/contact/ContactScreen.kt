@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -37,9 +36,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import com.yaz.contacts.ui.component.BoldButton
-import com.yaz.contacts.ui.component.BoldIconButton
 import com.yaz.contacts.ui.component.GlassCheck
-import com.yaz.contacts.ui.component.GlassRadio
 import com.yaz.contacts.ui.component.GlassSwitch
 import com.yaz.contacts.ui.component.QuietButton
 import com.yaz.contacts.ui.component.ZoneAlertDialog
@@ -63,7 +60,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.yaz.contacts.core.contacts.Account
@@ -85,6 +81,7 @@ import com.yaz.contacts.ui.component.FloatingFrame
 import com.yaz.contacts.ui.component.FloatingTop
 import com.yaz.contacts.ui.component.HeroGlow
 import com.yaz.contacts.ui.component.PersonActions
+import com.yaz.contacts.ui.component.PersonBadge
 import com.yaz.contacts.ui.component.PersonHeader
 import com.yaz.contacts.ui.component.LoadingMark
 import com.yaz.contacts.feature.common.ActionTile
@@ -319,6 +316,10 @@ private fun Header(d: Details) {
     val context = LocalContext.current
     val phonetic = listOf(d.name.phoneticGiven, d.name.phoneticMiddle, d.name.phoneticFamily).filter { it.isNotBlank() }.joinToString(" ")
     val display = d.display.ifBlank { "No name" }
+    val writer: ContactWriter = koinInject()
+    val scope = rememberCoroutineScope()
+    val haptics = rememberHaptics()
+    val say = rememberSayName(phonetic.ifBlank { d.display })
     // The shared person header (ui/component/PersonHeader): the face, then the name and the number, as AOSP Contacts'
     // QuickContactActivity.bindContactData (photo, display name, phonetic name only when there and different, setPhoneticName):
     // https://android.googlesource.com/platform/packages/apps/Contacts/+/refs/heads/main/src/com/android/contacts/quickcontact/QuickContactActivity.java
@@ -343,8 +344,17 @@ private fun Header(d: Details) {
             if (phonetic.isNotBlank() && phonetic != display) Text(phonetic, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Start)
             ContactLines(d)
         },
-        // How their name is said: as written to be heard (phonetic), else as written, by the phone's own voice.
-        badges = { SayName(phonetic.ifBlank { d.display }) }
+        // Capsules of the header (PersonBadge): how their name is said, as written to be heard (phonetic), else as written,
+        // by the phone's own voice; and the favourite, which moved here from the tiles. My card has no favourite.
+        badges = {
+            PersonBadge(AppIcons.VolumeUp, "Say name", onClick = say)
+            if (!android.provider.ContactsContract.isProfileId(d.id)) {
+                PersonBadge(if (d.starred) AppIcons.Star else AppIcons.StarOutline, "Favorite", accent = d.starred, tint = StarGold) {
+                    haptics.toggle(!d.starred)
+                    scope.launch { writer.star(d.id, !d.starred) }
+                }
+            }
+        }
     )
 }
 
@@ -420,14 +430,14 @@ private fun SharedCard(d: Details) {
     }
 }
 
+// The former SayName of this file, now the tap of a capsule: the same TextToSpeech calls, made on the first tap and shut down
+// with the page (https://developer.android.com/reference/android/speech/tts/TextToSpeech, init listener, speak, shutdown).
 @Composable
-private fun SayName(spoken: String) {
+private fun rememberSayName(spoken: String): () -> Unit {
     val context = LocalContext.current
-    val haptics = rememberHaptics()
     var voice by remember { mutableStateOf<android.speech.tts.TextToSpeech?>(null) }
     DisposableEffect(Unit) { onDispose { voice?.shutdown() } }
-    BoldIconButton(onClick = {
-        haptics.tick()
+    return {
         val ready = voice
         if (ready != null) ready.speak(spoken, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "name")
         else {
@@ -443,7 +453,7 @@ private fun SayName(spoken: String) {
             }
             voice = made
         }
-    }) { Icon(AppIcons.VolumeUp, "Say their name", tint = MaterialTheme.colorScheme.primary) }
+    }
 }
 
 /** What the user's own card gives when shared: each number, email, website and their work, ticked on or off. */
@@ -509,9 +519,6 @@ private fun Actions(d: Details, onQr: () -> Unit, onScan: () -> Unit, onTap: () 
         return
     }
     val context = LocalContext.current
-    val writer: ContactWriter = koinInject()
-    val scope = rememberCoroutineScope()
-    val haptics = rememberHaptics()
     var choosing by remember { mutableStateOf<String?>(null) }
     var sharing by remember { mutableStateOf(false) }
     val numbers = d.phones.map { it.value }.distinctBy { it.filter(Char::isDigit).takeLast(9) }
@@ -531,10 +538,6 @@ private fun Actions(d: Details, onQr: () -> Unit, onScan: () -> Unit, onTap: () 
             Reach.email(context, listOf(d.emails.first().value))
         }
         if (d.addresses.isNotEmpty()) ActionTile(AppIcons.Place, "Directions") { Reach.map(context, d.addresses.first().lines) }
-        ActionTile(if (d.starred) AppIcons.Star else AppIcons.StarOutline, "Favorite", StarGold, accent = d.starred) {
-            haptics.toggle(!d.starred)
-            scope.launch { writer.star(d.id, !d.starred) }
-        }
         ActionTile(AppIcons.Share, "Share") { sharing = true }
         // Their card to a phone right here: by a touch, or shown as a QR code.
         ActionTile(AppIcons.QrCode, "QR code") { onQr() }

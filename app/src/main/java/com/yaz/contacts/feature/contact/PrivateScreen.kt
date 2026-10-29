@@ -35,7 +35,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.yaz.contacts.core.dial.Numbers
@@ -59,7 +58,6 @@ import com.yaz.contacts.ui.component.ZoneAlertDialog
 import com.yaz.contacts.ui.component.rememberHaptics
 import com.yaz.contacts.ui.icon.AppIcons
 import com.yaz.contacts.ui.theme.AlertRed
-import com.yaz.contacts.ui.theme.AnswerGreen
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
