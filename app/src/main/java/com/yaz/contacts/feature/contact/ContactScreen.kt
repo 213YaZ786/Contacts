@@ -94,6 +94,7 @@ import com.yaz.contacts.ui.theme.AnswerGreen
 import com.yaz.contacts.ui.theme.StarGold
 import java.time.LocalDate
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
 import org.koin.compose.koinInject
 
 /**
@@ -116,6 +117,10 @@ fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDelete
     val haptics = rememberHaptics()
     val scope = rememberCoroutineScope()
     val undo = rememberUndo()
+    // The switches' saves run one after another, in the order tapped, as AOSP Contacts' ContactSaveService (an
+    // IntentService, one intent at a time) runs setSendToVoicemail:
+    // https://github.com/LineageOS/android_packages_apps_Contacts/blob/lineage-22.2/src/com/android/contacts/ContactSaveService.java
+    val switchWrites = remember { kotlinx.coroutines.sync.Mutex() }
     LaunchedEffect(Unit) { store.refresh() }
 
     var loaded by remember { mutableStateOf(false) }
@@ -207,7 +212,7 @@ fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDelete
                         },
                         onVoicemail = { on ->
                             haptics.toggle(on)
-                            scope.launch { writer.setVoicemail(id, on) }
+                            scope.launch { switchWrites.withLock { writer.setVoicemail(id, on) } }
                         },
                         onColour = { choosingColour = true },
                         onPoster = { onPoster(id) },
@@ -224,8 +229,16 @@ fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDelete
                         },
                         onBypass = { on ->
                             haptics.toggle(on)
-                            scope.launch { writer.save(d, d.copy(look = d.look.copy(bypass = on)), null) }
-                        }
+                            // Compared with the contact as stored now, not the page's copy: a tap before the page
+                            // read the last one back would else look like no change and never be written.
+                            scope.launch {
+                                switchWrites.withLock {
+                                    val now = store.details(id) ?: return@withLock
+                                    if (now.look.bypass != on) writer.save(now, now.copy(look = now.look.copy(bypass = on)), null)
+                                }
+                            }
+                        },
+                        settled = { !switchWrites.isLocked }
                     )
                     Elsewhere(d, onDelete = { deleting = true }, onMove = { moving = true }, onPrivate = { hiding = true }, onSeparate = {
                         scope.launch {
@@ -663,7 +676,7 @@ internal fun Fields(d: Details) {
 
 /** What the phone does when they call or write, kept in their contact for Dialer and SMS. */
 @Composable
-private fun OnThisPhone(d: Details, onRingtone: () -> Unit, onVoicemail: (Boolean) -> Unit, onColour: () -> Unit, onPoster: () -> Unit, onVibration: () -> Unit, onTone: () -> Unit, onBypass: (Boolean) -> Unit) {
+private fun OnThisPhone(d: Details, onRingtone: () -> Unit, onVoicemail: (Boolean) -> Unit, onColour: () -> Unit, onPoster: () -> Unit, onVibration: () -> Unit, onTone: () -> Unit, onBypass: (Boolean) -> Unit, settled: () -> Boolean) {
     val context = LocalContext.current
     val ringtone by produceState("Default", d.ringtone) {
         value = when (val r = d.ringtone) {
@@ -704,21 +717,38 @@ private fun OnThisPhone(d: Details, onRingtone: () -> Unit, onVoicemail: (Boolea
         InfoRow(AppIcons.Palette, if (d.look.color == 0 && d.look.letters.isBlank() && d.look.emoji.isBlank()) "Your wallpaper's colour" else "Their own", "Colour and monogram on their calls and messages", onClick = onColour, trailing = d.look.color.takeIf { it != 0 }?.let { c ->
             { Box(Modifier.padding(end = 12.dp).size(22.dp)) { androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) { drawCircle(Color(c)) } } }
         })
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).combinedClickableCompat { onVoicemail(!d.toVoicemail) }.padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp)) {
+        // As AOSP Contacts' QuickContactActivity (menu_send_to_voicemail): the switch flips at once and the save runs
+        // behind it, never waiting for the whole book to be read back; it follows the store again when that comes.
+        // https://github.com/LineageOS/android_packages_apps_Contacts/blob/lineage-22.2/src/com/android/contacts/quickcontact/QuickContactActivity.java
+        // The user's last choice is shown until the store holds it and no save waits: a read back in the middle of
+        // several taps would else show a value already left behind.
+        var chosenVoicemail by remember { mutableStateOf<Boolean?>(null) }
+        var chosenBypass by remember { mutableStateOf<Boolean?>(null) }
+        LaunchedEffect(d.toVoicemail, d.look.bypass) {
+            if (settled()) {
+                if (chosenVoicemail == d.toVoicemail) chosenVoicemail = null
+                if (chosenBypass == d.look.bypass) chosenBypass = null
+            }
+        }
+        val toVoicemail = chosenVoicemail ?: d.toVoicemail
+        val bypass = chosenBypass ?: d.look.bypass
+        val flipVoicemail = { on: Boolean -> chosenVoicemail = on; onVoicemail(on) }
+        val flipBypass = { on: Boolean -> chosenBypass = on; onBypass(on) }
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).combinedClickableCompat { flipVoicemail(!toVoicemail) }.padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp)) {
             Icon(AppIcons.Voicemail, null, tint = MaterialTheme.colorScheme.primary)
             Column(Modifier.weight(1f).padding(start = 16.dp)) {
                 Text("Send their calls to voicemail", style = MaterialTheme.typography.bodyLarge)
                 Text("The phone does not ring for them", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            GlassSwitch(checked = d.toVoicemail, onCheckedChange = onVoicemail)
+            GlassSwitch(checked = toVoicemail, onCheckedChange = flipVoicemail)
         }
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).combinedClickableCompat { onBypass(!d.look.bypass) }.padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).combinedClickableCompat { flipBypass(!bypass) }.padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp)) {
             Icon(AppIcons.Call, null, tint = MaterialTheme.colorScheme.primary)
             Column(Modifier.weight(1f).padding(start = 16.dp)) {
                 Text("Ring even in Do Not Disturb", style = MaterialTheme.typography.bodyLarge)
                 Text("Their calls ring when the phone is silent (in Dialer)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            GlassSwitch(checked = d.look.bypass, onCheckedChange = onBypass)
+            GlassSwitch(checked = bypass, onCheckedChange = flipBypass)
         }
     }
 }
