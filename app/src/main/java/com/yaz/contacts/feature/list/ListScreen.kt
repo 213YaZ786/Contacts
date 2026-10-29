@@ -479,15 +479,8 @@ private fun PeopleList(
                 item(key = "letter/$letter") { ListHeading(letter) }
                 items(group, key = { "c/${it.id}" }) { c ->
                     val menu = rememberPillMenu()
-                    // Swiped right it calls, left it writes (as Samsung's contacts); the long press keeps its menu.
-                    val number = c.phones.firstOrNull()
-                    com.yaz.contacts.ui.component.SwipeRow(
-                        start = number?.let { com.yaz.contacts.ui.component.SwipeAction(AppIcons.Call, "Call") { Reach.call(context, it) } },
-                        end = number?.takeIf { Reach.canMessage(context) }?.let { com.yaz.contacts.ui.component.SwipeAction(AppIcons.Message, "Message") { Reach.message(context, listOf(it)) } }
-                            ?: c.emails.firstOrNull()?.let { com.yaz.contacts.ui.component.SwipeAction(AppIcons.Email, "Email") { Reach.email(context, listOf(it)) } },
-                        modifier = Modifier.animateItem()
-                    ) {
-                    Box(menu.tracker) {
+                    // No swipe on a line: it would fight the swipe between tabs (the user, 2026-10-29); the long press keeps its menu.
+                    Box(menu.tracker.animateItem()) {
                         PersonLine(
                             name = Contacts.shown(c, lastFirst),
                             photo = c.photo,
@@ -499,7 +492,6 @@ private fun PeopleList(
                             onLongPress = { if (selected.isEmpty()) menu.open() else onSelect(c.id) }
                         )
                         ContactMenu(menu, c, onDelete, onSelect)
-                    }
                     }
                 }
             }
