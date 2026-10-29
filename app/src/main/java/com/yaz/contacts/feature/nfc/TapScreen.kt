@@ -452,7 +452,11 @@ private fun NfcSwitchStep(turnOn: Boolean, done: Boolean, title: String, action:
         Spacer(Modifier.height(16.dp))
         if (!done) {
             BoldButton(onClick = action.second, filled = true) { Text(action.first) }
-            other?.let { (label, run) -> QuietButton(onClick = run) { Text(label) } }
+            // 8 dp between two buttons, Material 3's spacing for a group of buttons (m3.material.io/components/buttons/specs).
+            other?.let { (label, run) ->
+                Spacer(Modifier.height(8.dp))
+                QuietButton(onClick = run) { Text(label) }
+            }
         }
     }
 }

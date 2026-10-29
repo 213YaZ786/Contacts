@@ -305,7 +305,9 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
                             else -> "No one here yet."
                         },
                         icon = if (f == Filter.Favorites) AppIcons.Star else AppIcons.Search,
-                        modifier = Modifier.fillMaxSize().padding(padding)
+                        // The same room above and below: centred on the window, so on a tablet it sits at the height of
+                        // the page pane's "Choose someone" (ContactsApp), and never under the header or the dock.
+                        modifier = Modifier.fillMaxSize().padding(vertical = maxOf(padding.calculateTopPadding(), padding.calculateBottomPadding()))
                     )
                     else -> PeopleList(
                         shown = list,
