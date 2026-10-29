@@ -117,6 +117,9 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
         else -> null
     }
     fun pageFilter(page: Int): Filter = when (page) { 0 -> Filter.Recent; 2 -> Filter.Favorites; else -> Filter.All }
+    // Each page's list state is kept here, so a drag on the floating header scrolls the page in view.
+    val pageLists = List(3) { androidx.compose.foundation.lazy.rememberLazyListState() }
+    val specialList = androidx.compose.foundation.lazy.rememberLazyListState()
     val filter: Filter = specialFilter ?: pageFilter(pager.currentPage)
     val order = settings.sortOrder
     val people = remember(all, order, settings.shownAccounts, settings.onlyWithNumbers) {
@@ -197,6 +200,7 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
             onOpenSettings = onOpenSettings,
             onOpenTidy = onOpenTidy,
             tidyWaiting = tidyWaiting,
+            scroll = if (specialFilter != null) specialList else pageLists[pager.currentPage],
             // In glass over the list, as Dialer's tabs: recent, everyone, favourites.
             overlay = {
                 if (canRead && people.isNotEmpty() && !selecting) {
@@ -256,7 +260,7 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
             }
         ) { padding ->
             @Composable
-            fun Page(f: Filter) {
+            fun Page(f: Filter, state: androidx.compose.foundation.lazy.LazyListState) {
                 val list = remember(people, f, query, lastTalk) { listFor(f) }
                 when {
                     !canRead -> EmptyZone(
@@ -265,7 +269,7 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
                         icon = AppIcons.Contacts,
                         modifier = Modifier.fillMaxSize().padding(padding)
                     )
-                    f == Filter.Private -> PrivateList(hidden, query, padding, onOpenPrivate)
+                    f == Filter.Private -> PrivateList(hidden, query, padding, onOpenPrivate, state)
                     all == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { LoadingMark(size = 72.dp) }
                     people.isEmpty() -> FirstImport(
                         padding,
@@ -284,9 +288,10 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
                         onMe = { me?.let { onOpen(it.id) } ?: onMakeMe() },
                         lastFirst = settings.lastNameFirst,
                         padding = padding,
-                        onOpen = onOpen
+                        onOpen = onOpen,
+                        state = state
                     )
-                    f == Filter.Favorites && query.isBlank() && list.isNotEmpty() -> FavoriteCards(list, padding, onOpen = onOpen, onLongPress = { c -> onOpen(c.id) })
+                    f == Filter.Favorites && query.isBlank() && list.isNotEmpty() -> FavoriteCards(list, padding, onOpen = onOpen, onLongPress = { c -> onOpen(c.id) }, state = state)
                     list.isEmpty() -> EmptyZone(
                         title = if (query.isNotBlank()) "No one found" else when (f) {
                             Filter.Recent -> "No one lately"
@@ -319,18 +324,19 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
                         onSelect = { id ->
                             haptics.firm()
                             toggle(id)
-                        }
+                        },
+                        list = state
                     )
                 }
             }
             val shownSpecial = specialFilter
-            if (shownSpecial != null) Page(shownSpecial)
+            if (shownSpecial != null) Page(shownSpecial, specialList)
             else androidx.compose.foundation.pager.HorizontalPager(
                 state = pager,
                 // The three stay alive, so a swipe never reloads or loses the scroll.
                 beyondViewportPageCount = 2,
                 modifier = Modifier.fillMaxSize()
-            ) { page -> Page(pageFilter(page)) }
+            ) { page -> Page(pageFilter(page), pageLists[page]) }
         }
     }
 
@@ -430,12 +436,12 @@ private fun PeopleList(
     onOpen: (Long) -> Unit,
     onDelete: (Contact) -> Unit,
     selected: Set<Long>,
-    onSelect: (Long) -> Unit
+    onSelect: (Long) -> Unit,
+    list: androidx.compose.foundation.lazy.LazyListState
 ) {
     // Recent ones keep their order, latest first, under one heading.
     val groups = remember(shown, order, grouped) { if (grouped) shown.groupBy { Contacts.bucketOf(it, order) } else mapOf("Talked with or added lately" to shown) }
     val rail = grouped && shown.size >= RAIL_FROM
-    val list = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     Box(Modifier.fillMaxSize()) {
@@ -673,7 +679,7 @@ private const val RAIL_FROM = 12
 
 /** The people kept private, found by name, number or email. */
 @Composable
-private fun PrivateList(people: List<com.yaz.contacts.data.contacts.PrivateBook.Person>, query: String, padding: androidx.compose.foundation.layout.PaddingValues, onOpen: (String) -> Unit) {
+private fun PrivateList(people: List<com.yaz.contacts.data.contacts.PrivateBook.Person>, query: String, padding: androidx.compose.foundation.layout.PaddingValues, onOpen: (String) -> Unit, state: androidx.compose.foundation.lazy.LazyListState) {
     val q = query.trim().lowercase()
     val digits = q.filter(Char::isDigit)
     val shown = remember(people, q) {
@@ -694,6 +700,7 @@ private fun PrivateList(people: List<com.yaz.contacts.data.contacts.PrivateBook.
         return
     }
     androidx.compose.foundation.lazy.LazyColumn(
+        state = state,
         contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding() + 8.dp, bottom = padding.calculateBottomPadding() + 96.dp),
         verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

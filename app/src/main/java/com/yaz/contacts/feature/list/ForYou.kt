@@ -58,11 +58,13 @@ fun ForYouPage(
     onMe: () -> Unit,
     lastFirst: Boolean,
     padding: PaddingValues,
-    onOpen: (Long) -> Unit
+    onOpen: (Long) -> Unit,
+    state: androidx.compose.foundation.lazy.LazyListState
 ) {
     val context = LocalContext.current
     val birthdays = remember(people) { Contacts.birthdays(people, java.time.LocalDate.now()) }
     LazyColumn(
+        state = state,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding() + 4.dp, bottom = padding.calculateBottomPadding()),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -108,10 +110,11 @@ fun ForYouPage(
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun FavoriteCards(favorites: List<Contact>, padding: PaddingValues, onOpen: (Long) -> Unit, onLongPress: (Contact) -> Unit) {
+fun FavoriteCards(favorites: List<Contact>, padding: PaddingValues, onOpen: (Long) -> Unit, onLongPress: (Contact) -> Unit, state: androidx.compose.foundation.lazy.LazyListState) {
     val context = LocalContext.current
     val haptics = rememberHaptics()
     LazyColumn(
+        state = state,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding() + 8.dp, bottom = padding.calculateBottomPadding()),
         verticalArrangement = Arrangement.spacedBy(12.dp),

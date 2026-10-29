@@ -111,8 +111,10 @@ fun PosterScreen(id: Long, onBack: () -> Unit) {
     }
     var saving by remember { mutableStateOf(false) }
 
+    val pageScroll = rememberScrollState()
     FloatingFrame(
         bottom = 24.dp,
+        scroll = pageScroll,
         top = {
             FloatingTop(
                 title = "Poster",
@@ -145,7 +147,7 @@ fun PosterScreen(id: Long, onBack: () -> Unit) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(14.dp),
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)
+            modifier = Modifier.fillMaxSize().verticalScroll(pageScroll).padding(horizontal = 16.dp)
         ) {
             Spacer(Modifier.height(padding.calculateTopPadding()))
             // At the phone's own proportions, as large as the window lets it be

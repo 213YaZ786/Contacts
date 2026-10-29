@@ -67,8 +67,10 @@ fun ChooseScreen(adding: Details?, onClose: () -> Unit, onNew: () -> Unit, onExi
     val shown = remember(all, query, settings.sortOrder) { all?.let { Contacts.search(Contacts.sorted(it, settings.sortOrder), query) } }
     val what = adding?.phones?.firstOrNull()?.value?.let { Numbers.format(context, it) } ?: adding?.emails?.firstOrNull()?.value ?: adding?.name?.display()
 
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     FloatingFrame(
         bottom = 24.dp,
+        scroll = listState,
         top = {
             FloatingTop(title = what?.let { "Add $it" } ?: "Add to contacts", leading = { FloatingAction(AppIcons.Close, "Cancel", onClose) })
             Box(Modifier.fillMaxWidth().padding(top = 4.dp), contentAlignment = Alignment.TopCenter) { SetupZone() }
@@ -79,6 +81,7 @@ fun ChooseScreen(adding: Details?, onClose: () -> Unit, onNew: () -> Unit, onExi
     ) { padding ->
         val list = shown
         LazyColumn(
+            state = listState,
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding() + 4.dp, bottom = padding.calculateBottomPadding()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

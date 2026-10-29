@@ -84,6 +84,26 @@ android {
         // The picture decoder in its isolated process is reached through Binder.
     }
 
+    // The phone kit's tests run on the JVM with Robolectric (SMS's setup, from Robolectric's
+    // https://robolectric.org/getting-started/: Android resources, JDK 17+ opens).
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = true
+            all {
+                it.jvmArgs(
+                    "--add-opens=java.base/java.lang=ALL-UNNAMED",
+                    "--add-opens=java.base/java.util=ALL-UNNAMED",
+                    "--add-opens=java.base/java.io=ALL-UNNAMED",
+                    "--add-opens=java.base/java.net=ALL-UNNAMED",
+                    "--add-opens=java.base/java.security=ALL-UNNAMED",
+                    "--add-opens=java.base/java.text=ALL-UNNAMED",
+                    "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED"
+                )
+            }
+        }
+    }
+
     packaging {
         resources.excludes += setOf(
             "/META-INF/{AL2.0,LGPL2.1}",
@@ -135,6 +155,8 @@ dependencies {
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation("androidx.test.ext:junit:1.3.0")
 }
 
 tasks.named("preBuild") { dependsOn(fetchTesseract) }

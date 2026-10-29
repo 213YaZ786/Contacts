@@ -170,8 +170,10 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
         }
     }
 
+    val pageScroll = rememberScrollState()
     FloatingFrame(
         bottom = 24.dp,
+        scroll = pageScroll,
         top = {
             FloatingTop(
                 title = when {
@@ -193,7 +195,7 @@ fun EditorScreen(contactId: Long?, prefill: Details?, onClose: () -> Unit, onSav
         }
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).imePadding().padding(horizontal = 16.dp)
+            modifier = Modifier.fillMaxSize().verticalScroll(pageScroll).imePadding().padding(horizontal = 16.dp)
         ) {
             Spacer(Modifier.height(padding.calculateTopPadding() + 8.dp))
             // The photo: tap to choose one, the Photo Picker asks no permission.

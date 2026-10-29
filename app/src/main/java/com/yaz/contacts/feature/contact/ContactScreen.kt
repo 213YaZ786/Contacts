@@ -156,8 +156,10 @@ fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDelete
             ?: com.yaz.contacts.ui.theme.PersonColours.of(context, d?.thumbnail ?: d?.photo)
     }
     com.yaz.contacts.ui.theme.PersonTheme(seed) {
+    val pageScroll = rememberScrollState()
     FloatingFrame(
         bottom = 24.dp,
+        scroll = pageScroll,
         top = {
             FloatingTop(
                 title = null,
@@ -182,7 +184,7 @@ fun ContactScreen(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onDelete
                 HeroGlow(d.photo ?: d.thumbnail, 380.dp, color = d.look.color.takeIf { it != 0 }?.let { Color(it) })
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)
+                    modifier = Modifier.fillMaxSize().verticalScroll(pageScroll).padding(horizontal = 16.dp)
                 ) {
                     Spacer(Modifier.height(padding.calculateTopPadding() + 8.dp))
                     Header(d)

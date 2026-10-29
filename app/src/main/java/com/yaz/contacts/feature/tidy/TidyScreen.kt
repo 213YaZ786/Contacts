@@ -98,13 +98,15 @@ fun TidyScreen(onBack: () -> Unit, onOpen: (Long) -> Unit, onTrash: () -> Unit, 
         }
     }
 
+    val pageScroll = rememberScrollState()
     FloatingFrame(
         bottom = 24.dp,
+        scroll = pageScroll,
         top = { FloatingTop(title = "Tidy up", leading = { FloatingAction(AppIcons.ArrowBack, "Back", onBack) }) }
     ) { padding ->
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)
+            modifier = Modifier.fillMaxSize().verticalScroll(pageScroll).padding(horizontal = 16.dp)
         ) {
             Spacer(Modifier.height(padding.calculateTopPadding()))
             // Joined with a comma, as AOSP Dialer's CallLogEntryText.java (https://android.googlesource.com/platform/packages/apps/Dialer/+/refs/heads/main/java/com/android/dialer/calllogutils/CallLogEntryText.java).

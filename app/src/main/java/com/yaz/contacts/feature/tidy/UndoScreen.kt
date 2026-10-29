@@ -58,8 +58,10 @@ fun UndoScreen(onBack: () -> Unit) {
     var reading by remember { mutableStateOf<Long?>(null) }
     var working by remember { mutableStateOf(false) }
 
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     FloatingFrame(
         bottom = 24.dp,
+        scroll = listState,
         top = { FloatingTop(title = "Undo changes", leading = { FloatingAction(AppIcons.ArrowBack, "Back", onBack) }) }
     ) { padding ->
         if (times.isEmpty()) {
@@ -72,6 +74,7 @@ fun UndoScreen(onBack: () -> Unit) {
             return@FloatingFrame
         }
         LazyColumn(
+            state = listState,
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding() + 4.dp, bottom = padding.calculateBottomPadding()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

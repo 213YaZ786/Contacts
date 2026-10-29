@@ -37,9 +37,12 @@ fun TabFrame(
     tidyWaiting: Boolean = false,
     controls: (@Composable () -> Unit)? = null,
     overlay: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {},
+    /** The content's own scroll state: a drag on the header scrolls it (FloatingFrame's `scroll`). */
+    scroll: androidx.compose.foundation.gestures.ScrollableState? = null,
     content: @Composable (PaddingValues) -> Unit
 ) {
     FloatingFrame(
+        scroll = scroll,
         bottom = 120.dp,
         top = {
             FloatingTop(

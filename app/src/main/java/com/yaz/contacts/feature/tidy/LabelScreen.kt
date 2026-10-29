@@ -77,8 +77,10 @@ fun LabelScreen(id: Long, onBack: () -> Unit, onOpen: (Long) -> Unit) {
     var renaming by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
 
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     FloatingFrame(
         bottom = 24.dp,
+        scroll = listState,
         top = {
             FloatingTop(
                 title = label?.title ?: "Label",
@@ -88,6 +90,7 @@ fun LabelScreen(id: Long, onBack: () -> Unit, onOpen: (Long) -> Unit) {
         }
     ) { padding ->
         LazyColumn(
+            state = listState,
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding() + 8.dp, bottom = padding.calculateBottomPadding()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

@@ -91,8 +91,10 @@ fun PickScreen(kind: PickKind, title: String, onClose: () -> Unit, onPicked: (Ur
     }
     val shown = remember(withKind, query) { withKind?.let { Contacts.search(it, query) } }
 
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     FloatingFrame(
         bottom = 24.dp,
+        scroll = listState,
         top = {
             FloatingTop(title = title, leading = { FloatingAction(AppIcons.Close, "Cancel", onClose) })
             Box(Modifier.fillMaxWidth().padding(top = 4.dp), contentAlignment = Alignment.TopCenter) { SetupZone() }
@@ -107,6 +109,7 @@ fun PickScreen(kind: PickKind, title: String, onClose: () -> Unit, onPicked: (Ur
             list == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { LoadingMark(size = 72.dp) }
             list.isEmpty() -> EmptyZone(title = "No one to pick", message = "No contact has what was asked for.", icon = AppIcons.Search, modifier = Modifier.fillMaxSize().padding(padding))
             else -> LazyColumn(
+                state = listState,
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding() + 4.dp, bottom = padding.calculateBottomPadding()),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
