@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -64,10 +63,14 @@ fun LetterRail(letters: List<String>, onLetter: (String) -> Unit, modifier: Modi
             ) {
                 var last by remember { mutableStateOf("") }
                 touched?.let { last = it }
-                ZoneSurface(shape = CircleShape, accent = true, modifier = Modifier.size(56.dp)) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(last, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
-                    }
+                // The letter does nothing, so it is large plain text, no zone.
+                Box(Modifier.size(56.dp), contentAlignment = Alignment.Center) {
+                    Text(
+                        last,
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         }

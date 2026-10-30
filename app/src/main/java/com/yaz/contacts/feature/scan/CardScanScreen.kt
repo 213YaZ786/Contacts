@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -43,6 +42,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
@@ -59,7 +59,6 @@ import com.yaz.contacts.ui.component.BoldButton
 import com.yaz.contacts.ui.component.EmptyZone
 import com.yaz.contacts.ui.component.FloatingAction
 import com.yaz.contacts.ui.component.FloatingFrame
-import com.yaz.contacts.ui.component.FloatingPane
 import com.yaz.contacts.ui.component.FloatingTop
 import com.yaz.contacts.ui.component.LoadingMark
 import com.yaz.contacts.ui.component.rememberHaptics
@@ -152,15 +151,15 @@ fun CardScanScreen(onBack: () -> Unit, onDetails: (Details) -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp).widthIn(max = 520.dp).fillMaxWidth()
                 ) {
-                    // A pane over the camera: Material 3's extra large corner, 28 dp (ShapeDefaults,
-                    // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
-                    FloatingPane(shape = ShapeDefaults.ExtraLarge) {
-                        Text(
-                            if (failed) "No name, number or email could be read. Try closer, in good light." else "Fit the card in the frame, flat and well lit.",
-                            style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp)
-                        )
-                    }
+                    // The hint does nothing, so it is plain text on the picture, no pane; a soft shadow
+                    // to read on any picture (https://developer.android.com/develop/ui/compose/text/style-text#add-shadow).
+                    Text(
+                        if (failed) "No name, number or email could be read. Try closer, in good light." else "Fit the card in the frame, flat and well lit.",
+                        style = MaterialTheme.typography.bodyLarge.copy(shadow = Shadow(Color.Black.copy(alpha = 0.7f), Offset(0f, 2f), 8f)),
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp)
+                    )
                     EvenRows(minSlot = 120.dp) {
                         ActionTile(AppIcons.PhotoCamera, "Take it", accent = true) {
                             val shot = capture ?: return@ActionTile
