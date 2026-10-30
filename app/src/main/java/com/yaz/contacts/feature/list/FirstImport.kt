@@ -61,7 +61,7 @@ internal fun FirstImport(padding: PaddingValues, onImportFile: () -> Unit, onImp
             Spacer(Modifier.height(12.dp))
             Text("No contacts yet", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
             Spacer(Modifier.height(20.dp))
-            BoldButton(onClick = { haptics.firm(); onImportFile() }, filled = true, modifier = Modifier.height(56.dp)) {
+            BoldButton(onClick = { haptics.firm(); onImportFile() }, filled = true, modifier = Modifier.heightIn(min = 56.dp)) {
                 Icon(AppIcons.Download, contentDescription = null)
                 Spacer(Modifier.width(10.dp))
                 Text("Import contacts", style = MaterialTheme.typography.titleMedium)

@@ -69,7 +69,9 @@ private fun TitleChoice(title: String, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(start = 18.dp, end = 12.dp, top = 10.dp, bottom = 10.dp)
         ) {
-            androidx.compose.material3.Text(title, style = androidx.compose.material3.MaterialTheme.typography.titleMedium, maxLines = 1)
+            // Up to two lines, broken between words, the chevron kept at its end (a longer language, the 200 % font);
+            // weight(fill = false) is how Row shares the width with a trailing icon.
+            androidx.compose.material3.Text(title, style = androidx.compose.material3.MaterialTheme.typography.titleMedium, maxLines = 2, modifier = Modifier.weight(1f, fill = false))
             androidx.compose.material3.Icon(AppIcons.ExpandMore, null, modifier = Modifier.padding(start = 4.dp).size(20.dp))
         }
     }

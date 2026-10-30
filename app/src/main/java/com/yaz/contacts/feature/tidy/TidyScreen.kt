@@ -119,7 +119,7 @@ fun TidyScreen(onBack: () -> Unit, onOpen: (Long) -> Unit, onTrash: () -> Unit, 
                             group.forEach { c ->
                                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = 4.dp)) {
                                     ContactAvatar(c.name, c.photo, 32.dp)
-                                    TextButton(onClick = { onOpen(c.id) }) { Text(c.name, maxLines = 1) }
+                                    TextButton(onClick = { onOpen(c.id) }) { Text(c.name, maxLines = 2) }
                                 }
                             }
                         }
@@ -195,7 +195,7 @@ fun TidyScreen(onBack: () -> Unit, onOpen: (Long) -> Unit, onTrash: () -> Unit, 
                     if (accounts.size > 1) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         accounts.forEach { a ->
                             ZoneSurface(shape = RoundedCornerShape(50), accent = a.key == account?.key, onClick = { account = a }) {
-                                Text(accountLabel(a), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp).widthIn(max = 240.dp), maxLines = 1)
+                                Text(accountLabel(a), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp).widthIn(max = 240.dp), maxLines = 2)
                             }
                         }
                     }
