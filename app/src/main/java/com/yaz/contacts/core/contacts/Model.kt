@@ -17,6 +17,8 @@ data class Contact(
     val alternative: String,
     val photo: String?,
     val starred: Boolean,
+    /** The full photo (Contacts.PHOTO_URI), for a face larger than the 96 px thumbnail in [photo]. */
+    val photoFull: String? = null,
     val phones: List<String> = emptyList(),
     val emails: List<String> = emptyList(),
     val company: String? = null,

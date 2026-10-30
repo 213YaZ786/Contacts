@@ -135,7 +135,7 @@ fun FavoriteCards(favorites: List<Contact>, padding: PaddingValues, onOpen: (Lon
                         )
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxSize().padding(top = 18.dp, bottom = 14.dp, start = 10.dp, end = 10.dp)) {
-                            ContactAvatar(c.name, c.photo, 104.dp, look = c.look?.forAvatar())
+                            ContactAvatar(c.name, c.photoFull ?: c.photo, 104.dp, look = c.look?.forAvatar())
                             Spacer(Modifier.height(10.dp))
                             Text(
                                 c.name,

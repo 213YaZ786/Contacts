@@ -152,7 +152,15 @@ fun PosterScreen(id: Long, onBack: () -> Unit) {
             Spacer(Modifier.height(padding.calculateTopPadding()))
             // At the phone's own proportions, as large as the window lets it be
             // while the styles and colours stay in sight below it.
-            val ratio = 9f / 19.5f
+            // The ratio is the screen's own, held upright, so Dialer's call screen (drawn on the whole screen,
+            // bars included) shows exactly the frame set here: WindowManager.getMaximumWindowMetrics, whose
+            // bounds include the system bars (https://developer.android.com/reference/android/view/WindowMetrics).
+            val ratio = remember(context) {
+                val bounds = context.getSystemService(android.view.WindowManager::class.java).maximumWindowMetrics.bounds
+                val short = minOf(bounds.width(), bounds.height()).toFloat()
+                val long = maxOf(bounds.width(), bounds.height()).toFloat()
+                if (short > 0f && long > 0f) short / long else 9f / 19.5f
+            }
             val height = (room - padding.calculateTopPadding() - CONTROLS).coerceAtLeast(240.dp)
             val width = minOf(height * ratio, 360.dp)
             Poster(d.display, photo, look, Modifier.width(width).aspectRatio(ratio)) { look = it }

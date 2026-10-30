@@ -120,7 +120,11 @@ class ContactStore(private val context: Context, private val scope: CoroutineSco
             ContactsContract.Contacts.STARRED,
             ContactsContract.Contacts.CONTACT_LAST_UPDATED_TIMESTAMP,
             ContactsContract.Contacts.SORT_KEY_PRIMARY,
-            ContactsContract.Contacts.SORT_KEY_ALTERNATIVE
+            ContactsContract.Contacts.SORT_KEY_ALTERNATIVE,
+            // The full photo for the large faces (favourites' cards), as AOSP Dialer's favourite tiles read
+            // Contacts.PHOTO_URI (LineageOS android_packages_apps_Dialer,
+            // java/com/android/contacts/common/ContactTileLoaderFactory.java): the thumbnail is 96 px.
+            ContactsContract.Contacts.PHOTO_URI
         )
         // Android's index of each name in the phone's language: columns its
         // contacts store has always had but the SDK keeps unnamed; read when there.
@@ -141,8 +145,9 @@ class ContactStore(private val context: Context, private val scope: CoroutineSco
                     updated = c.getLong(6),
                     sortKey = c.getString(7).orEmpty(),
                     sortKeyAlt = c.getString(8).orEmpty(),
-                    bucket = if (labelled) c.getString(9).orEmpty() else "",
-                    bucketAlt = if (labelled) c.getString(10).orEmpty() else ""
+                    bucket = if (labelled) c.getString(10).orEmpty() else "",
+                    bucketAlt = if (labelled) c.getString(11).orEmpty() else "",
+                    photoFull = c.getString(9)
                 )
             }
         }
