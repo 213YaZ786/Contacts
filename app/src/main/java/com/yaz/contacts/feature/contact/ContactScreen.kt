@@ -81,6 +81,7 @@ import com.yaz.contacts.ui.component.FloatingFrame
 import com.yaz.contacts.ui.component.FloatingTop
 import com.yaz.contacts.ui.component.HeroGlow
 import com.yaz.contacts.ui.component.PersonActions
+import com.yaz.contacts.ui.component.PersonActionSpec
 import com.yaz.contacts.ui.component.PersonBadge
 import com.yaz.contacts.ui.component.PersonHeader
 import com.yaz.contacts.ui.component.LoadingMark
@@ -537,6 +538,18 @@ private fun Actions(d: Details, onQr: () -> Unit, onScan: () -> Unit, onTap: () 
     var choosing by remember { mutableStateOf<String?>(null) }
     var sharing by remember { mutableStateOf(false) }
     val numbers = d.phones.map { it.value }.distinctBy { it.filter(Char::isDigit).takeLast(9) }
+    // Contacts' own tiles, appended to the shared flow (PersonActions' `extra`, as Dialer's Block and SMS's calls),
+    // so all the rows are balanced together.
+    val own = buildList {
+        if (d.emails.isNotEmpty() && Reach.canEmail(context)) add(PersonActionSpec(AppIcons.Email, "Email") {
+            Reach.email(context, listOf(d.emails.first().value))
+        })
+        if (d.addresses.isNotEmpty()) add(PersonActionSpec(AppIcons.Place, "Directions") { Reach.map(context, d.addresses.first().lines) })
+        add(PersonActionSpec(AppIcons.Share, "Share") { sharing = true })
+        // Their card to a phone right here: by a touch, or shown as a QR code.
+        add(PersonActionSpec(AppIcons.QrCode, "QR code") { onQr() })
+        if (com.yaz.contacts.BuildConfig.DEBUG || context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_NFC_HOST_CARD_EMULATION)) add(PersonActionSpec(AppIcons.Nfc, "Drop") { onGive() })
+    }
     // The row shared with Dialer and SMS (ui/component/PersonActions): the person's own page has no Contact tile.
     // Several numbers: the choice dialog asks which one.
     PersonActions(
@@ -545,18 +558,12 @@ private fun Actions(d: Details, onQr: () -> Unit, onScan: () -> Unit, onTap: () 
         contact = false,
         onCall = { if (numbers.size == 1) Reach.call(context, numbers[0]) else choosing = "call" },
         onMessage = if (Reach.canMessage(context)) ({ if (numbers.size == 1) Reach.message(context, numbers) else choosing = "message" }) else null,
-        modifier = Modifier.widthIn(max = 640.dp)
+        modifier = Modifier.widthIn(max = 640.dp),
+        extra = own
     )
-    if (numbers.isNotEmpty()) Spacer(Modifier.height(10.dp))
-    EvenRows(minSlot = 64.dp, modifier = Modifier.widthIn(max = 640.dp)) {
-        if (d.emails.isNotEmpty() && Reach.canEmail(context)) ActionTile(AppIcons.Email, "Email") {
-            Reach.email(context, listOf(d.emails.first().value))
-        }
-        if (d.addresses.isNotEmpty()) ActionTile(AppIcons.Place, "Directions") { Reach.map(context, d.addresses.first().lines) }
-        ActionTile(AppIcons.Share, "Share") { sharing = true }
-        // Their card to a phone right here: by a touch, or shown as a QR code.
-        ActionTile(AppIcons.QrCode, "QR code") { onQr() }
-        if (com.yaz.contacts.BuildConfig.DEBUG || context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_NFC_HOST_CARD_EMULATION)) ActionTile(AppIcons.Nfc, "Drop") { onGive() }
+    // No number: PersonActions shows nothing, the own tiles stand alone.
+    if (numbers.isEmpty()) EvenRows(minSlot = 64.dp, modifier = Modifier.widthIn(max = 640.dp)) {
+        own.forEach { ActionTile(it.icon, it.label) { it.onClick() } }
     }
     if (sharing) {
         com.yaz.contacts.ui.component.ZoneAlertDialog(

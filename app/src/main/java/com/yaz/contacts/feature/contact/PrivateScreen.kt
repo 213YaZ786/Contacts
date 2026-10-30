@@ -53,6 +53,7 @@ import com.yaz.contacts.ui.component.FloatingAction
 import com.yaz.contacts.ui.component.FloatingFrame
 import com.yaz.contacts.ui.component.FloatingTop
 import com.yaz.contacts.ui.component.PersonActions
+import com.yaz.contacts.ui.component.PersonActionSpec
 import com.yaz.contacts.ui.component.PersonHeader
 import com.yaz.contacts.ui.component.ZoneAlertDialog
 import com.yaz.contacts.ui.component.rememberHaptics
@@ -112,19 +113,10 @@ fun PrivateScreen(id: String, onBack: () -> Unit, onPublic: (Long) -> Unit) {
                 extra = { Text("Only in Contacts: other apps do not see them", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Start) }
             )
             Spacer(Modifier.height(16.dp))
-            // A private person is not in Android's contacts: id -2 and no Contact or Add contact tile.
-            PersonActions(
-                number = numbers.firstOrNull(),
-                contactId = -2L,
-                contact = false,
-                onCall = { Reach.call(context, numbers.first()) },
-                onMessage = if (Reach.canMessage(context)) ({ Reach.message(context, numbers.take(1)) }) else null,
-                modifier = Modifier.widthIn(max = 640.dp)
-            )
-            if (numbers.isNotEmpty()) Spacer(Modifier.height(10.dp))
-            EvenRows(minSlot = 64.dp, modifier = Modifier.widthIn(max = 640.dp)) {
-                if (d.emails.isNotEmpty() && Reach.canEmail(context)) ActionTile(AppIcons.Email, "Email") { Reach.email(context, listOf(d.emails.first().value)) }
-                ActionTile(AppIcons.Contacts, "Make visible") {
+            // The page's own tiles, appended to the shared flow (PersonActions' `extra`, as on the contact page).
+            val own = buildList {
+                if (d.emails.isNotEmpty() && Reach.canEmail(context)) add(PersonActionSpec(AppIcons.Email, "Email") { Reach.email(context, listOf(d.emails.first().value)) })
+                add(PersonActionSpec(AppIcons.Contacts, "Make visible") {
                     scope.launch {
                         val id = book.show(context, person, writer, store, settings.current.defaultAccount)
                         if (id != null) {
@@ -133,7 +125,21 @@ fun PrivateScreen(id: String, onBack: () -> Unit, onPublic: (Long) -> Unit) {
                             onPublic(id)
                         } else haptics.reject()
                     }
-                }
+                })
+            }
+            // A private person is not in Android's contacts: id -2 and no Contact or Add contact tile.
+            PersonActions(
+                number = numbers.firstOrNull(),
+                contactId = -2L,
+                contact = false,
+                onCall = { Reach.call(context, numbers.first()) },
+                onMessage = if (Reach.canMessage(context)) ({ Reach.message(context, numbers.take(1)) }) else null,
+                modifier = Modifier.widthIn(max = 640.dp),
+                extra = own
+            )
+            // No number: PersonActions shows nothing, the own tiles stand alone.
+            if (numbers.isEmpty()) EvenRows(minSlot = 64.dp, modifier = Modifier.widthIn(max = 640.dp)) {
+                own.forEach { ActionTile(it.icon, it.label) { it.onClick() } }
             }
             Spacer(Modifier.height(8.dp))
             Fields(d)
