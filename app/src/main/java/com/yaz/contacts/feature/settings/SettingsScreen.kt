@@ -217,6 +217,15 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koinViewMo
             )
         ),
         ABOUT to listOf(
+            // Dialer's Guide tile (https://github.com/213YaZ786/Dialer/blob/main/app/src/main/java/com/yaz/dialer/feature/settings/SettingsScreen.kt).
+            SettingsActionTile(
+                id = "guide", name = "Guide", title = "Guide", icon = AppIcons.Play,
+                value = "Show again", summary = "See the welcome pages again",
+                onClick = {
+                    viewModel.replayGuide()
+                    onBack()
+                }
+            ),
             SettingsActionTile(
                 id = "updates", name = "Updates", title = "Updates", icon = AppIcons.Update,
                 value = updatesLabel(settings.updates), summary = updatesLabel(settings.updates),

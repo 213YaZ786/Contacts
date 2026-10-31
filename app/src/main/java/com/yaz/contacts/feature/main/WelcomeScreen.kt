@@ -85,7 +85,8 @@ fun WelcomeScreen(onStart: () -> Unit) {
         // The app's own mark, large and ringing, as on the other apps' first page.
         LoadingMark(size = 160.dp)
         Spacer(Modifier.height(20.dp))
-        Text("Welcome to Contacts", style = MaterialTheme.typography.displaySmall, textAlign = TextAlign.Center)
+        // Every title in the accent (the user, 2026-10-31), as Modules' SettingsSectionTitle.
+        Text("Welcome to Contacts", style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center)
         Spacer(Modifier.height(8.dp))
         Text(
             "Your contacts with no account, no tracking and no ads.",

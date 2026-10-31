@@ -26,4 +26,7 @@ class SettingsViewModel(val store: SettingsStore) : ViewModel() {
     fun setLockAfter(seconds: Int) = store.update { it.copy(lockAfterSeconds = seconds) }
     fun setOnlyWithNumbers(on: Boolean) = store.update { it.copy(onlyWithNumbers = on) }
     fun setShownAccounts(keys: Set<String>) = store.update { it.copy(shownAccounts = keys) }
+    // Settings > Guide: the welcome pages again. Taken from Dialer's replayGuide
+    // (https://github.com/213YaZ786/Dialer/blob/main/app/src/main/java/com/yaz/dialer/feature/settings/SettingsViewModel.kt).
+    fun replayGuide() = store.update { it.copy(welcomeSeen = false) }
 }

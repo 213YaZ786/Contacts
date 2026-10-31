@@ -368,6 +368,9 @@ object AppIcons {
     /** Source code: Material Icons code, as SMS's AppIcons.Code (Apache-2.0, google/material-design-icons). */
     val Code: ImageVector by lazy { build("Code", "M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z") }
 
+    /** Guide, show again: Material Icons play_arrow, as Dialer's AppIcons.Play (Apache-2.0, google/material-design-icons). */
+    val Play: ImageVector by lazy { build("Play", "M8 5v14l11-7z") }
+
     private fun build(name: String, pathData: String): ImageVector =
         ImageVector.Builder(
             name = name,

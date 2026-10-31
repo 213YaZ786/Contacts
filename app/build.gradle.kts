@@ -37,8 +37,8 @@ android {
         applicationId = "com.yaz.contacts"
         minSdk = 31
         targetSdk = 37
-        versionCode = 27
-        versionName = "0.9.16"
+        versionCode = 28
+        versionName = "0.9.17"
     }
 
     signingConfigs {

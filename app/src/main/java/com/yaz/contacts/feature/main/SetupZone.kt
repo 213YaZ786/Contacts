@@ -93,7 +93,8 @@ fun SetupZone(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 22.dp)
         ) {
-            Text(step.title, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+            // Every title in the accent (the user, 2026-10-31), as Modules' SettingsSectionTitle.
+            Text(step.title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center)
             Text(step.message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
             Row(Modifier.padding(top = 4.dp)) {
                 BoldButton(filled = true, onClick = { setup.run(step) }) { Text(step.action) }
