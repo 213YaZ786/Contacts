@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ShapeDefaults
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,7 +40,6 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.yaz.contacts.core.update.Updates
 import com.yaz.contacts.ui.component.BoldButton
 import com.yaz.contacts.ui.component.LoadingMark
-import com.yaz.contacts.ui.component.ZoneSurface
 import com.yaz.contacts.ui.icon.AppIcons
 
 /**
@@ -141,26 +139,26 @@ private fun WelcomeZone(
     action: String?,
     onAction: () -> Unit
 ) {
-    // A card on the page: Material 3's extra large corner, 28 dp (ShapeDefaults,
-    // https://developer.android.com/reference/kotlin/androidx/compose/material3/ShapeDefaults).
-    ZoneSurface(shape = ShapeDefaults.ExtraLarge, modifier = Modifier.widthIn(max = 520.dp).fillMaxWidth()) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    if (done) AppIcons.CheckCircle else icon,
-                    contentDescription = if (done) "Done" else null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 12.dp))
-            }
-            Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (!done && action != null) {
-                Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.End) {
-                    BoldButton(onClick = onAction) { Text(action) }
-                }
+    // A zone means a tap (the user, 2026-10-28): the text and its button lie straight on the page, as Element X's
+    // NotificationsOptInView lays its text and buttons (element-hq/element-x-android, AGPL-3.0, layout only:
+    // https://github.com/element-hq/element-x-android/blob/develop/features/ftue/impl/src/main/kotlin/io/element/android/features/ftue/impl/notifications/NotificationsOptInView.kt),
+    // and as SMS's WelcomeZone does when it has nothing to tap.
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.widthIn(max = 520.dp).fillMaxWidth().padding(horizontal = 22.dp, vertical = 8.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                if (done) AppIcons.CheckCircle else icon,
+                contentDescription = if (done) "Done" else null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 12.dp))
+        }
+        Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (!done && action != null) {
+            Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.End) {
+                BoldButton(onClick = onAction) { Text(action) }
             }
         }
     }
