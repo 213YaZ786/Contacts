@@ -305,9 +305,10 @@ fun ListScreen(onOpen: (Long) -> Unit, onOpenPrivate: (String) -> Unit, onMakeMe
                             else -> "No one here yet."
                         },
                         icon = if (f == Filter.Favorites) AppIcons.Star else AppIcons.Search,
-                        // The same room above and below: centred on the window, so on a tablet it sits at the height of
-                        // the page pane's "Choose someone" (ContactsApp), and never under the header or the dock.
-                        modifier = Modifier.fillMaxSize().padding(vertical = maxOf(padding.calculateTopPadding(), padding.calculateBottomPadding()))
+                        // Centred in the room left between the header and the dock (Material 3's Scaffold padding,
+                        // https://github.com/androidx/androidx/blob/androidx-main/compose/material3/material3/samples/src/main/java/androidx/compose/material3/samples/ScaffoldSamples.kt);
+                        // the same room above and below crushed it under a tall header (the user, 2026-10-31: the Sunny star squashed).
+                        modifier = Modifier.fillMaxSize().padding(top = padding.calculateTopPadding(), bottom = padding.calculateBottomPadding())
                     )
                     else -> PeopleList(
                         shown = list,
