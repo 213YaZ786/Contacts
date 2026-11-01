@@ -137,7 +137,7 @@ dependencies {
     implementation(libs.glide.gifdecoder)
     // Numbers written the way their country writes them and the same number
     // found under two spellings, offline: Google's libphonenumber (Apache-2.0).
-    implementation("com.googlecode.libphonenumber:libphonenumber:9.0.41")
+    implementation("com.googlecode.libphonenumber:libphonenumber:9.0.42")
     // A contact as a QR code, and a QR code read back into a contact: ZXing's core (Apache-2.0).
     implementation("com.google.zxing:core:3.5.4")
     // The passphrase of an encrypted backup turned into its key with Argon2id
