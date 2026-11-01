@@ -1,9 +1,9 @@
 {
   "v": 1,
-  "ground": {"day": "system_accent1_50", "night": "system_accent1_50"},
+  "ground": {"day": "system_accent1_500", "night": "system_accent1_500"},
   "layers": [
-    {"png": "people_body.png", "sha256": "d22f4b8fae33ce299adac26aac7abbd9210bd778926046703ce7deb15fbc4b9b", "day": "system_accent1_500", "night": "system_accent1_500"},
-    {"png": "people_shine.png", "sha256": "87ef1a9ad41ab3e71920de78eaa6400e59f00804a09983a1eb1e15731ca94946"},
-    {"png": "people_person.png", "sha256": "5efcee9c6c2ddb6594aaafb682c7e1e2e2b19e6d134b0e9e8bf8309922e47fdf"}
+    {"png": "people_body.png", "sha256": "362c7e40bed5e8be6c29e3393e6b9b82ce2062f49faf5dc00603cb6ac51e1340", "day": "system_accent1_500", "night": "system_accent1_500"},
+    {"png": "people_shine.png", "sha256": "cf90b0362fe60366275a8b9a5f847dc9da194e80a4df2c46295c3f3783463155"},
+    {"png": "people_person.png", "sha256": "c41e6c2a8c0cddfda88b60394f8a69cab00944f2621405f5cef45fcdbacbe91b"}
   ]
 }
