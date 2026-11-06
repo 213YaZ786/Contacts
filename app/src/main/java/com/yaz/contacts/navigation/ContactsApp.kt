@@ -366,7 +366,15 @@ private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) ->
     var showWelcome by rememberSaveable { mutableStateOf(!store.current.welcomeSeen) }
     val settings by store.settings.collectAsState()
     // Settings > Guide asks for the welcome pages again, then the show (as Dialer's DialerApp).
-    androidx.compose.runtime.LaunchedEffect(settings.welcomeSeen) { if (!settings.welcomeSeen) showWelcome = true }
+    // Opened again from Settings once it was closed: the button reads Done (Language's `reopened`, read on entry,
+    // since closing the first guide sets welcomeSeen while the screen is still leaving), as SMS's Main.
+    var reopened by rememberSaveable { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(settings.welcomeSeen) {
+        if (!settings.welcomeSeen) {
+            if (!showWelcome) reopened = true
+            showWelcome = true
+        }
+    }
     if (!showWelcome && !BuildConfig.DEBUG) UpdatePrompt(settings.updates, BuildConfig.VERSION_NAME)
 
     val look = LocalGlass.current
@@ -405,8 +413,9 @@ private fun Main(onOpen: (Long) -> Unit, onMakeMe: () -> Unit, onEdit: (Long) ->
                 contentColor = MaterialTheme.colorScheme.onBackground
             ) {
                 Readable {
-                    WelcomeScreen(onStart = {
+                    WelcomeScreen(reopened = reopened, onStart = {
                         showWelcome = false
+                        reopened = false
                         store.update { it.copy(welcomeSeen = true) }
                     })
                 }

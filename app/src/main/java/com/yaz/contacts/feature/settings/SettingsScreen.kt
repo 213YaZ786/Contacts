@@ -42,6 +42,7 @@ import com.yaz.contacts.core.update.Updates
 import com.yaz.contacts.data.contacts.ContactStore
 import com.yaz.contacts.data.settings.ThemeMode
 import com.yaz.contacts.feature.contact.accountLabel
+import com.yaz.contacts.feature.main.rememberSetupTiles
 import com.yaz.contacts.navigation.LocalReadableInset
 import com.yaz.contacts.navigation.WidthClass
 import com.yaz.contacts.ui.component.BoldButton
@@ -62,6 +63,7 @@ import com.yaz.contacts.ui.component.SettingsTile
 import com.yaz.contacts.ui.component.SettingsTileDialogs
 import com.yaz.contacts.ui.component.SettingsTileGrid
 import com.yaz.contacts.ui.component.ZoneAlertDialog
+import com.yaz.contacts.ui.component.leftText
 import com.yaz.contacts.ui.icon.AppIcons
 import com.yaz.contacts.ui.theme.TEXT_SCALES
 import com.yaz.contacts.ui.theme.textScaleLabel
@@ -102,6 +104,11 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koinViewMo
     val detailScroll = rememberSaveable(sectionId, saver = androidx.compose.foundation.ScrollState.Saver) {
         androidx.compose.foundation.ScrollState(0)
     }
+
+    // The guide's tile says how many steps are left, read from the system as the guide reads them
+    // (Language's SettingsScreen, guideValue = setup.leftText()):
+    // https://github.com/213YaZ786/Language/blob/main/app/src/main/java/com/yaz/language/feature/settings/SettingsScreen.kt
+    val guideValue = rememberSetupTiles().leftText()
 
     val store: ContactStore = koinInject()
     val accounts = remember { store.accounts() }
@@ -220,7 +227,7 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koinViewMo
             // Dialer's Guide tile (https://github.com/213YaZ786/Dialer/blob/main/app/src/main/java/com/yaz/dialer/feature/settings/SettingsScreen.kt).
             SettingsActionTile(
                 id = "guide", name = "Guide", title = "Guide", icon = AppIcons.Play,
-                value = "Show again", summary = "See the welcome pages again",
+                value = guideValue, summary = "See the welcome guide again",
                 onClick = {
                     viewModel.replayGuide()
                     onBack()
