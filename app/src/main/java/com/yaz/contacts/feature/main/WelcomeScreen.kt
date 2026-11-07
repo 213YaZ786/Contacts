@@ -176,7 +176,9 @@ internal fun WelcomeContent(tiles: List<SetupTile>, reopened: Boolean, onStart: 
         ) {
             Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
             Spacer(Modifier.height(40.dp))
-            LoadingMark(size = 120.dp, running = false)
+            // The app's own mark, large and moving, as the guide before the tiles drew it (the user, 2026-11-07):
+            // https://github.com/213YaZ786/Contacts/blob/a633aa3/app/src/main/java/com/yaz/contacts/feature/main/WelcomeScreen.kt#WelcomeScreen
+            LoadingMark(size = 160.dp)
             Spacer(Modifier.height(20.dp))
             // Every title in the accent (the user, 2026-10-31), as Modules' SettingsSectionTitle.
             Text("Welcome to Contacts", style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center)
