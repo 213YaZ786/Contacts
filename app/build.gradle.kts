@@ -137,21 +137,21 @@ dependencies {
     implementation(libs.glide.gifdecoder)
     // Numbers written the way their country writes them and the same number
     // found under two spellings, offline: Google's libphonenumber (Apache-2.0).
-    implementation("com.googlecode.libphonenumber:libphonenumber:9.0.41")
+    implementation("com.googlecode.libphonenumber:libphonenumber:9.0.43")
     // A contact as a QR code, and a QR code read back into a contact: ZXing's core (Apache-2.0).
     implementation("com.google.zxing:core:3.5.4")
     // The passphrase of an encrypted backup turned into its key with Argon2id
     // (RFC 9106): Bouncy Castle's implementation (MIT licence).
-    implementation("org.bouncycastle:bcprov-jdk18on:1.86")
+    implementation("org.bouncycastle:bcprov-jdk18on:1.87")
     // Reading a business card on the phone: Tesseract through Tesseract4Android
     // (Apache-2.0), only published on JitPack, so fetched at its pinned version
     // and checked against its SHA-256 below instead of trusting that repository.
     implementation(files(tesseractAar))
     implementation("androidx.annotation:annotation:1.11.0")
     // Scanning someone's QR code with the camera: Android's CameraX (Apache-2.0).
-    implementation("androidx.camera:camera-camera2:1.6.2")
-    implementation("androidx.camera:camera-lifecycle:1.6.2")
-    implementation("androidx.camera:camera-compose:1.6.2")
+    implementation("androidx.camera:camera-camera2:1.7.0")
+    implementation("androidx.camera:camera-lifecycle:1.7.0")
+    implementation("androidx.camera:camera-compose:1.7.0")
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
